@@ -1,0 +1,79 @@
+[flake8]
+# =============================================================================
+# Flake8 configuration
+# =============================================================================
+# Complementary to ruff — catches style issues ruff does not enforce.
+# =============================================================================
+
+# Maximum line length — aligns with ruff's default 88
+max-line-length = 88
+
+# Complexity
+max-complexity = 10
+
+# Exclude generated / vendored files
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    migrations,
+    alembic,
+    .mypy_cache,
+    .ruff_cache,
+    .pytest_cache,
+    node_modules,
+
+# Error codes to ignore — these are covered by ruff or don't fit this project
+ignore =
+    # W503: line break before binary operator (conflicts with ruff formatter)
+    W503,
+    # E203: whitespace before ':' (conflicts with ruff formatter)
+    E203,
+    # E501: line too long (ruff handles this at 88)
+    E501,
+    # D100-D107: docstring rules — handled by ruff if enabled
+    D100,
+    D101,
+    D102,
+    D103,
+    D104,
+    D105,
+    D106,
+    D107,
+    # F401: imported but unused — mypy --strict catches this more accurately
+    F401,
+    # F403: star imports — allowed in __init__.py
+    F403,
+
+# Always-enable rules
+select =
+    F,      # PyFlakes
+    E,      # pycodestyle errors
+    W,      # pycodestyle warnings
+    C,      # McCabe complexity
+    # N,    # naming (controversial, opt-in)
+    # D,    # docstrings (use pydocstyle directly instead)
+
+# Per-file overrides
+per-file-ignores =
+    # __init__.py can re-export symbols from submodules
+    */__init__.py: F403, F401
+    # Test files can use simpler docstrings and star imports
+    tests/*: D, F403, F401
+
+# Docstring convention (Google style)
+# docstring-convention = google
+
+# Number of workers (0 = auto)
+jobs = 0
+
+# Show the source of each error
+show-source = True
+
+# Output statistics
+statistics = True

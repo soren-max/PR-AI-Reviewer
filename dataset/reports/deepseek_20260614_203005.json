@@ -1,0 +1,106 @@
+[
+  {
+    "item_id": "BUG-001",
+    "description": "未判空直接解引用会导致运行时崩溃",
+    "metric": {
+      "found": 2,
+      "missed": 0,
+      "recall": 1.0,
+      "passed": true,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  },
+  {
+    "item_id": "BUG-002",
+    "description": "循环或切片中的离一错误导致少处理或多处理一项",
+    "metric": {
+      "found": 2,
+      "missed": 0,
+      "recall": 1.0,
+      "passed": true,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  },
+  {
+    "item_id": "PERF-001",
+    "description": "异步路径中的同步 IO 阻塞事件循环",
+    "metric": {
+      "found": 4,
+      "missed": 0,
+      "recall": 1.0,
+      "passed": true,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  },
+  {
+    "item_id": "PERF-002",
+    "description": "无界数组增长可能导致内存耗尽",
+    "metric": {
+      "found": 3,
+      "missed": 0,
+      "recall": 1.0,
+      "passed": true,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  },
+  {
+    "item_id": "SEC-003",
+    "description": "敏感信息硬编码在源代码中",
+    "metric": {
+      "found": 3,
+      "missed": 1,
+      "recall": 0.75,
+      "passed": false,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  },
+  {
+    "item_id": "SEC-004",
+    "description": "用户输入直接用于构造文件路径",
+    "metric": {
+      "found": 3,
+      "missed": 0,
+      "recall": 1.0,
+      "passed": true,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  },
+  {
+    "item_id": "SEC-001",
+    "description": "字符串拼接 SQL 查询导致注入漏洞",
+    "metric": {
+      "found": 2,
+      "missed": 0,
+      "recall": 1.0,
+      "passed": true,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  },
+  {
+    "item_id": "SEC-002",
+    "description": "用户输入未转义直接渲染到 HTML 页面",
+    "metric": {
+      "found": 3,
+      "missed": 0,
+      "recall": 1.0,
+      "passed": true,
+      "has_fix": true
+    },
+    "error": null,
+    "duration_ms": 0
+  }
+]
