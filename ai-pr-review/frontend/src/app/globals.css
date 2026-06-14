@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
+
+@layer utilities {
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Code block styling */
+pre {
+  @apply overflow-x-auto whitespace-pre-wrap break-all;
+}
+
+code {
+  @apply font-mono text-sm;
+}
+
+/* Gauge animation */
+.gauge-fill {
+  transition: stroke-dashoffset 1s ease-out;
+}

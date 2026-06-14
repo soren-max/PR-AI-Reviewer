@@ -1,0 +1,64 @@
+# AI PR Review — Architecture Document
+
+## System Overview
+
+```
+┌────────────────────┐     ┌───────────────────────┐     ┌──────────────────┐
+│   Next.js SPA      │────▶│   FastAPI Backend       │────▶│   DeepSeek V4 Pro│
+│   (Port 3000)      │     │   (Port 8000)           │     │   API            │
+└────────────────────┘     └───────────┬───────────┘     └──────────────────┘
+                                        │
+                               ┌────────▼────────┐
+                               │   GitHub API     │
+                               │   (External)     │
+                               └─────────────────┘
+```
+
+## Data Flow
+
+```
+1. User submits PR URL
+2. Backend parses URL → creates Review (status=pending) → returns 201
+3. Background task:
+   a. status → fetching
+   b. Fetch PR metadata + diff from GitHub API
+   c. status → analyzing
+   d. Build prompt → call DeepSeek API
+   e. Parse LLM response → generate structured report
+   f. Save report to DB → status → completed
+4. Frontend polls status every 3s
+5. status=completed → render report
+
+On failure at any step:
+   status → failed, error_code + error_detail set
+```
+
+## Key Design Decisions
+
+- **BackgroundTasks**: MVP uses FastAPI's built-in `BackgroundTasks` instead of Celery/Redis to avoid infrastructure complexity. For production, migrate to Celery + Redis.
+- **SQLite**: See [ADR-001](./adr/001-use-sqlite-for-mvp.md)
+- **Single API call to LLM**: All files sent in one prompt. For large PRs (>20 files), truncate to top 15 most-changed files.
+- **Polling not WebSocket**: MVP simplicity. Future: SSE or WebSocket for real-time updates.
+
+## Directory Responsibilities
+
+### Backend
+
+| Directory | Responsibility |
+|-----------|---------------|
+| `app/api/` | HTTP layer: route definitions, request validation, response serialization |
+| `app/core/` | Cross-cutting concerns: configuration, database engine, exception hierarchy, logging |
+| `app/models/` | SQLAlchemy ORM models: table definitions, relationships, query helpers |
+| `app/schemas/` | Pydantic schemas: API request validation, response serialization, OpenAPI generation |
+| `app/services/` | Business logic: GitHub client, LLM client, prompt builder, report parser |
+| `app/tasks/` | Async workflow orchestration: the `run_review` pipeline |
+| `tests/` | pytest test suite, mirrors app structure |
+
+### Frontend
+
+| Directory | Responsibility |
+|-----------|---------------|
+| `src/app/` | Next.js App Router: page components and layouts |
+| `src/components/` | Reusable React components: forms, status display, report rendering |
+| `src/lib/` | API client, utility functions, constants |
+| `src/types/` | TypeScript type definitions (aligned with backend Pydantic schemas) |
