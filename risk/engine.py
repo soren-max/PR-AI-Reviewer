@@ -21,11 +21,24 @@ Typical usage::
 """
 from __future__ import annotations
 
-import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
+
+
+# Pre-compiled regex for safe path detection
+_SAFE_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(p, re.IGNORECASE) for p in (
+        r"^docs/", r"^documentation/", r"^readme", r"^changelog",
+        r"^contributing", r"^\.github/", r"\.md$", r"\.txt$", r"\.rst$",
+        r"tests?/", r"__tests__/", r"spec/", r"test_.*\.py$",
+        r".*_test\.", r".*\.spec\.", r"^examples/", r"^scripts/",
+        r"^assets/", r"^static/", r"^public/", r"\.css$", r"\.scss$",
+        r"\.less$", r"\.svg$", r"\.png$", r"\.jpg$", r"\.ico$",
+        r"\.gitignore", r"\.editorconfig", r"\.prettierrc", r"\.eslintrc",
+    )
+]
 
 
 # ===========================================================================
@@ -295,51 +308,10 @@ def _matches_category(file_path: str, category: RiskCategory) -> bool:
 def _is_safe_path(file_path: str) -> bool:
     """Check if a file path is considered low-risk.
 
-    Safe paths include documentation, tests, static assets, and
-    configuration files that don't affect runtime behavior.
+    Uses pre-compiled patterns for performance.
     """
-    safe_patterns: list[str] = [
-        r"^docs/",
-        r"^documentation/",
-        r"^readme",
-        r"^changelog",
-        r"^contributing",
-        r"^\.github/",
-        r"\.md$",
-        r"\.txt$",
-        r"\.rst$",
-        r"tests?/",
-        r"__tests__/",
-        r"spec/",
-        r"test_.*\.py$",
-        r".*_test\.",
-        r".*\.spec\.",
-        r"^examples/",
-        r"^scripts/",
-        r"^assets/",
-        r"^static/",
-        r"^public/",
-        r"\.css$",
-        r"\.scss$",
-        r"\.less$",
-        r"\.svg$",
-        r"\.png$",
-        r"\.jpg$",
-        r"\.ico$",
-        r"\.gitignore",
-        r"\.editorconfig",
-        r"\.prettierrc",
-        r"\.eslintrc",
-    ]
-
     normalized = _normalize_path(file_path)
-    for pattern in safe_patterns:
-        try:
-            if re.search(pattern, normalized):
-                return True
-        except re.error:
-            continue
-    return False
+    return any(p.search(normalized) for p in _SAFE_PATTERNS)
 
 
 # ===========================================================================

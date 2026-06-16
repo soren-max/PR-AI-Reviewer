@@ -213,7 +213,7 @@ class TestEdgeCases(unittest.TestCase):
         result = assess_risk(["packages/backend/app/services/auth/login.py"])
         self.assertGreaterEqual(result.score, 70)
 
-    def test_score_never_exceeds_100(self) -> None:
+    def test_score_never_exceeds_cap(self) -> None:
         result = assess_risk([
             "auth/login.py", "payment/checkout.py",
             "security/crypto.py", "database/schema.py",
