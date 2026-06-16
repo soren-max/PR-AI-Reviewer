@@ -2,6 +2,10 @@
 Common Pydantic schemas — pagination, error responses, etc.
 """
 from pydantic import BaseModel
+from typing import Generic, TypeVar
+
+
+T = TypeVar("T")
 
 
 class ErrorDetail(BaseModel):
@@ -19,7 +23,7 @@ class ErrorResp(BaseModel):
     request_id: str | None = None
 
 
-class PaginatedResponse[T](BaseModel):
+class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response wrapper."""
 
     items: list[T]
