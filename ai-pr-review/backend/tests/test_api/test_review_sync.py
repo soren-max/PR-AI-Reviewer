@@ -164,6 +164,16 @@ class TestReviewEndpoint:
         assert data["input_tokens"] == 450
         assert data["output_tokens"] == 180
         assert data["model"] == "deepseek-chat"
+        assert data["metrics"]["prompt_tokens"] == 450
+        assert data["metrics"]["completion_tokens"] == 180
+        assert data["metrics"]["total_tokens"] == 630
+        assert data["metrics"]["review_time_ms"] >= 0
+        assert data["metrics"]["workflow_latency_ms"] >= 0
+        assert data["metrics"]["github_api_latency_ms"] >= 0
+        assert data["metrics"]["llm_latency_ms"] >= 0
+        assert data["metrics"]["prompt_length_chars"] > 0
+        assert data["metrics"]["risk_score"] >= 0
+        assert data["metrics"]["risk_level"] in {"low", "medium", "high", "critical"}
 
     async def test_review_success_with_language_en(
         self,
@@ -311,3 +321,4 @@ class TestReviewEndpoint:
         assert "Review Summary" in resp.text
         assert "Clean fix for login redirect" in resp.text
         assert "text/markdown" in resp.headers.get("content-type", "")
+        assert int(resp.headers["X-Review-Time-Ms"]) >= 0

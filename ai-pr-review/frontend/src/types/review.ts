@@ -43,6 +43,20 @@ export interface ReviewSyncRequest {
   language?: 'zh' | 'en';
 }
 
+export interface ReviewMetrics {
+  review_time_ms: number;
+  workflow_latency_ms: number;
+  github_api_latency_ms: number;
+  llm_latency_ms: number;
+  prompt_length_chars: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  risk_score: number;
+  risk_level: string;
+  node_latency_ms: Record<string, number>;
+}
+
 export interface ReviewSyncResponse {
   pr_url: string;
   owner: string;
@@ -53,6 +67,7 @@ export interface ReviewSyncResponse {
   input_tokens: number;
   output_tokens: number;
   model: string;
+  metrics?: ReviewMetrics;
 }
 
 // === Data Types ===

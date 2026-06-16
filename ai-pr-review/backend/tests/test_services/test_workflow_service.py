@@ -66,6 +66,11 @@ async def test_workflow_service_runs_langgraph_end_to_end(
     assert state["review_result"].model == "deepseek-chat"
     assert state["final_report"].summary == "Clean auth change."
     assert state["token_usage"]["total_tokens"] == 140
+    assert state["metrics"]["github_api_latency_ms"] >= 0
+    assert state["metrics"]["llm_latency_ms"] >= 0
+    assert state["metrics"]["prompt_length_chars"] > 0
+    assert state["metrics"]["risk_score"] == state["risk_analysis"].score
+    assert state["metrics"]["risk_level"] == state["risk_analysis"].risk_level.value
     assert state["errors"] == []
     assert {"parse_pr", "fetch_pr", "diff_analysis", "risk_detection", "review_generation", "report_generation", "total"} <= set(state["latency"])
 
@@ -112,3 +117,10 @@ async def test_review_service_facade_preserves_legacy_output(
     assert output.input_tokens == 100
     assert output.output_tokens == 40
     assert output.model == "deepseek-chat"
+    assert output.metrics is not None
+    assert output.metrics.review_time_ms >= 0
+    assert output.metrics.prompt_tokens == 100
+    assert output.metrics.completion_tokens == 40
+    assert output.metrics.total_tokens == 140
+    assert output.metrics.prompt_length_chars > 0
+    assert output.metrics.risk_score == output.risk.score

@@ -37,4 +37,5 @@ class ReviewState(TypedDict, total=False):
     last_exception: Exception
     latency: dict[str, int]
     token_usage: dict[str, int]
+    metrics: dict[str, Any]
     checkpoint: Any

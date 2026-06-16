@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 
 from app.core.exceptions import GitHubAPIError, InvalidPRUrlError, PRNotFoundError
-from app.schemas.review_request import ReviewRequest, ReviewResponse
+from app.schemas.review_request import ReviewMetricsResponse, ReviewRequest, ReviewResponse
 from app.services.github import GitHubService, parse_pr_url
 from app.services.llm.base import BaseLLMService
 from app.services.llm.factory import get_llm_service
@@ -107,6 +107,7 @@ async def review_pr(
         input_tokens=result.input_tokens,
         output_tokens=result.output_tokens,
         model=result.model,
+        metrics=ReviewMetricsResponse(**(result.metrics.to_dict() if result.metrics else {})),
     )
 
 
@@ -150,5 +151,6 @@ async def review_pr_raw(
         headers={
             "X-Review-Model": result.model,
             "X-Review-Tokens": str(result.input_tokens + result.output_tokens),
+            "X-Review-Time-Ms": str(result.duration_ms),
         },
     )

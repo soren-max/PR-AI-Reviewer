@@ -66,6 +66,7 @@ Each stage must be complete before the next begins.
 | Checkpoint extension interface reserved for future persistence | ✅ Complete |
 | Backwards-compatible `ReviewService` facade | ✅ Complete |
 | Workflow unit, node, integration, API compatibility, and mocked external API tests | ✅ Complete |
+| Review workflow observability metrics in API and frontend | ✅ Complete |
 
 ---
 

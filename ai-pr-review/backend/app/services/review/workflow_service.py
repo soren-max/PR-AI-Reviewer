@@ -48,6 +48,7 @@ class WorkflowService:
             "language": language,
             "errors": [],
             "latency": {},
+            "metrics": {},
             "token_usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
             "checkpoint": self.checkpoint,
         }

@@ -62,6 +62,7 @@ This is a **real engineering product**, not a demo. Every milestone preserves te
 | 📝 **Review Prompt V2** | Enterprise JSON output format with CWE mapping and false-positive control | ✅ Done |
 | 📊 **Structured Report** | JSON → Markdown report with severity-categorized issues | ✅ Done |
 | 🧭 **LangGraph Workflow** | Stateful Agent Workflow orchestration with retry and error recovery | ✅ Done |
+| 📈 **Review Observability** | Review time, workflow latency, GitHub/LLM latency, prompt/token usage, and risk metrics | ✅ Done |
 | 🚀 **FastAPI Backend** | `POST /api/v1/review` synchronous review endpoint | ✅ Done |
 | 🖥️ **Next.js Frontend** | PR URL input → report rendering | ✅ Done |
 | 🔄 **Multi-LLM** | DeepSeek / OpenAI / Qwen via config switch | ✅ Done |
@@ -123,7 +124,8 @@ PR URL
 ④ review/diff_parser  →  structured FileDiff, Hunk, ChangedLine
 ⑤ risk/engine  →  risk_level, score, matched_categories
 ⑥ WorkflowService  →  LangGraph state flow + LLM call + report_generator
-⑦ Response 200  →  { summary, changed_modules, issues[] }
+⑦ Observability  →  review time, node latency, GitHub/LLM latency, tokens, risk score
+⑧ Response 200  →  { summary, changed_modules, issues[], metrics }
 ```
 
 ---
@@ -221,7 +223,24 @@ curl -X POST http://localhost:8000/api/v1/review \
   "report": "...",
   "input_tokens": 450,
   "output_tokens": 180,
-  "model": "deepseek-chat"
+  "model": "deepseek-chat",
+  "metrics": {
+    "review_time_ms": 2300,
+    "workflow_latency_ms": 2300,
+    "github_api_latency_ms": 420,
+    "llm_latency_ms": 1700,
+    "prompt_length_chars": 12840,
+    "prompt_tokens": 450,
+    "completion_tokens": 180,
+    "total_tokens": 630,
+    "risk_score": 85,
+    "risk_level": "high",
+    "node_latency_ms": {
+      "parse_pr": 1,
+      "fetch_pr": 420,
+      "review_generation": 1700
+    }
+  }
 }
 ```
 
@@ -318,9 +337,10 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 | **Stage 0** — Repository Foundation | ✅ Complete |
 | **Stage 1** — PR Fetch + Diff Engine | ✅ Complete |
 | **Stage 2** — Review Engine + Pipeline | ✅ Complete |
-| **Stage 3** — Context Retrieval V1 | 🔧 In Progress |
-| **Stage 4** — Multi-Model Evaluation | 📅 Planned |
-| **Stage 5** — GitHub Webhooks + Batch Review | 📅 Planned |
+| **Stage 3** — Agent Workflow + Observability | ✅ Complete |
+| **Stage 4** — Context Retrieval V1 | 📅 Planned |
+| **Stage 5** — Multi-Model Evaluation | 📅 Planned |
+| **Stage 6** — GitHub Webhooks + Batch Review | 📅 Planned |
 
 ---
 
@@ -332,10 +352,11 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 | Backend API | ✅ `POST /api/v1/review` |
 | Frontend | ✅ Next.js SPA |
 | LLM providers | ✅ DeepSeek / OpenAI / Qwen |
+| Observability | ✅ Review workflow metrics surfaced in API and frontend |
 | Test coverage | ✅ 130+ tests, ≥80% |
 | CI/CD | ✅ GitHub Actions |
 | Enterprise docs | ✅ PRD / Roadmap / Acceptance / Workflow |
-| Context Retrieval | 🔧 Stage 3 |
+| Context Retrieval | 📅 Stage 4 |
 
 ---
 
