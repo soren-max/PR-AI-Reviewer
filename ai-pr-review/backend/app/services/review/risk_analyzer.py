@@ -9,7 +9,14 @@ Clean Architecture 层级: Domain 适配器
 """
 from __future__ import annotations
 
-from risk.engine import (
+import sys
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[5]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from risk.engine import (  # noqa: E402
     assess_risk as _assess_risk,
     build_risk_prompt_context as _build_risk_context,
     RiskResult,
