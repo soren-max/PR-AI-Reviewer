@@ -9,9 +9,12 @@ Review Service — Clean Architecture 模块。
     report_generator.py  — 报告生成
 
   Service (编排):
-    review_service.py    — 协调完整审查流程
+    workflow_service.py  — LangGraph workflow orchestration
+    review_service.py    — Backwards-compatible facade
 """
 from app.services.review.review_service import ReviewService, ReviewInput, ReviewOutput
+from app.services.review.workflow_service import WorkflowService
+from app.services.review.state import ReviewState
 from app.services.review.diff_parser import parse_diff, DiffResult
 from app.services.review.risk_analyzer import assess_risk, RiskResult, build_risk_prompt_context
 from app.services.review.prompt_builder import build_review_prompt
@@ -21,6 +24,8 @@ __all__ = [
     "ReviewService",
     "ReviewInput",
     "ReviewOutput",
+    "WorkflowService",
+    "ReviewState",
     "parse_diff",
     "DiffResult",
     "assess_risk",

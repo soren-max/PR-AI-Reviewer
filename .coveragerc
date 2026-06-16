@@ -1,0 +1,14 @@
+[run]
+source =
+    github
+    review
+    risk
+    ai-pr-review/backend/app/services/llm
+    ai-pr-review/backend/app/services/review
+
+omit =
+    */tests/*
+    */__pycache__/*
+    */app/services/llm/_client.py
+    */app/services/llm/openai.py
+    */app/services/llm/qwen.py

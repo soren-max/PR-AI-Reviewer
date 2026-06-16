@@ -61,10 +61,11 @@ This is a **real engineering product**, not a demo. Every milestone preserves te
 | ⚠️ **Risk Detection** | 8 risk categories with weighted scoring | ✅ Done |
 | 📝 **Review Prompt V2** | Enterprise JSON output format with CWE mapping and false-positive control | ✅ Done |
 | 📊 **Structured Report** | JSON → Markdown report with severity-categorized issues | ✅ Done |
+| 🧭 **LangGraph Workflow** | Stateful Agent Workflow orchestration with retry and error recovery | ✅ Done |
 | 🚀 **FastAPI Backend** | `POST /api/v1/review` synchronous review endpoint | ✅ Done |
 | 🖥️ **Next.js Frontend** | PR URL input → report rendering | ✅ Done |
 | 🔄 **Multi-LLM** | DeepSeek / OpenAI / Qwen via config switch | ✅ Done |
-| 🧪 **Test Suite** | 130+ tests across 6 test files | ✅ Done |
+| 🧪 **Test Suite** | Workflow, API, parser, risk, GitHub, and LLM tests with external calls mocked | ✅ Done |
 | 📋 **Acceptance Criteria** | 86 acceptance criteria across 6 features | ✅ Done |
 | 🟢 **CI Pipeline** | Lint → Test → Summary with fail-fast | ✅ Done |
 | 🏗️ **Context Retrieval** | AST-based code context retrieval (next phase) | 🔧 Planned |
@@ -100,11 +101,14 @@ PR URL
 ┌─────────────────────────────────────┐
 │          backend/ (FastAPI)          │
 │                                     │
-│  ReviewService (orchestrator)        │
-│    ├── PromptBuilder                │
-│    ├── RiskAnalyzer (adapter)        │
-│    ├── LLM Provider (DeepSeek/...)   │
-│    └── ReportGenerator              │
+│  ReviewService (compat facade)       │
+│    └── WorkflowService (LangGraph)   │
+│        ├── ParsePRNode               │
+│        ├── FetchPRNode               │
+│        ├── DiffAnalysisNode          │
+│        ├── RiskDetectionNode         │
+│        ├── ReviewGenerationNode      │
+│        └── ReportGenerationNode      │
 │                                     │
 │  output: Structured JSON Report     │
 └─────────────────────────────────────┘
@@ -118,7 +122,7 @@ PR URL
 ③ github/client  →  PR metadata + unified diff
 ④ review/diff_parser  →  structured FileDiff, Hunk, ChangedLine
 ⑤ risk/engine  →  risk_level, score, matched_categories
-⑥ ReviewService  →  prompt_builder + LLM call + report_generator
+⑥ WorkflowService  →  LangGraph state flow + LLM call + report_generator
 ⑦ Response 200  →  { summary, changed_modules, issues[] }
 ```
 
@@ -129,6 +133,7 @@ PR URL
 | Layer | Technology |
 |---|---|
 | **Backend** | Python 3.12, FastAPI |
+| **Workflow** | LangGraph state graph |
 | **LLM** | DeepSeek V4 Pro / OpenAI GPT-4 / Qwen Max |
 | **GitHub API** | requests (sync), httpx (async) |
 | **Diff Parsing** | regex + AST (Python ast module) |
@@ -226,6 +231,16 @@ curl -X POST http://localhost:8000/api/v1/review \
 curl http://localhost:8000/api/v1/health
 # → {"status": "ok", "version": "0.2.0"}
 ```
+
+### Workflow Compatibility
+
+The synchronous review API is unchanged. Internally, `ReviewService` now delegates to a LangGraph-backed `WorkflowService`:
+
+```text
+PR URL → Parse PR → Fetch PR → Diff Analysis → Risk Detection → Review Agent → Report Agent → Output
+```
+
+The Week2 prompt and response shape are preserved. See [docs/LANGGRAPH_WORKFLOW.md](docs/LANGGRAPH_WORKFLOW.md) for the workflow design and extension points.
 
 ---
 

@@ -83,7 +83,7 @@ class ReviewReport:
         # Summary
         lines.append("## 📋 Review Summary")
         lines.append("")
-        lines.append(self.summary or self.raw_llm_output.split("## ")[0] if self.raw_llm_output else "_No summary available._")
+        lines.append(self.summary or self._legacy_markdown_summary() or "_No summary available._")
         lines.append("")
 
         # Diff statistics
@@ -166,6 +166,12 @@ class ReviewReport:
             },
             "diff_summary": self.diff_summary,
         }, ensure_ascii=False, indent=2)
+
+    def _legacy_markdown_summary(self) -> str:
+        """Preserve legacy Markdown-only LLM output when JSON parsing fails."""
+        if not self.raw_llm_output:
+            return ""
+        return self.raw_llm_output.strip()
 
 
 class ReportGenerator:
