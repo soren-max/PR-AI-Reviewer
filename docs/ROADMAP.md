@@ -52,14 +52,31 @@ Each stage must be complete before the next begins.
 
 ---
 
-## Stage 3: Context Retrieval V1 🔧
+## Stage 3: Agent Workflow ✅
+
+**Goal**: Run the PR review pipeline through a stateful LangGraph workflow.
+
+| Deliverable | Status |
+|---|---|
+| `ReviewState` with PR, diff, risk, review, report, error, latency, and token metadata | ✅ Complete |
+| LangGraph workflow service | ✅ Complete |
+| Parse PR, Fetch PR, Diff Analysis, Risk Detection, Review Generation, Report Generation nodes | ✅ Complete |
+| State flow with conditional error recovery | ✅ Complete |
+| Retry for external GitHub and LLM calls | ✅ Complete |
+| Checkpoint extension interface reserved for future persistence | ✅ Complete |
+| Backwards-compatible `ReviewService` facade | ✅ Complete |
+| Workflow unit, node, integration, API compatibility, and mocked external API tests | ✅ Complete |
+
+---
+
+## Stage 4: Context Retrieval V1 📅
 
 **Goal**: Enrich review with code context beyond the diff.
 
 | Deliverable | Status |
 |---|---|
-| Python AST parser | 🔧 In Progress |
-| Symbol table builder | 🔧 In Progress |
+| Python AST parser | 📅 Planned |
+| Symbol table builder | 📅 Planned |
 | Call graph construction | 📅 Planned |
 | Import graph construction | 📅 Planned |
 | Context formatter → Prompt integration | 📅 Planned |
@@ -67,7 +84,7 @@ Each stage must be complete before the next begins.
 
 ---
 
-## Stage 4: Multi-Model Evaluation 📅
+## Stage 5: Multi-Model Evaluation 📅
 
 **Goal**: Benchmark and compare LLM performance.
 
@@ -81,7 +98,7 @@ Each stage must be complete before the next begins.
 
 ---
 
-## Stage 5: GitHub Integration 📅
+## Stage 6: GitHub Integration 📅
 
 **Goal**: Integrate directly with GitHub workflow.
 
@@ -95,7 +112,7 @@ Each stage must be complete before the next begins.
 
 ---
 
-## Stage 6: Production Readiness 📅
+## Stage 7: Production Readiness 📅
 
 **Goal**: Deployable, monitored, production-grade.
 

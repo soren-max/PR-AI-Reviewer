@@ -4,12 +4,15 @@ pytest shared fixtures for AI PR Review tests.
 from __future__ import annotations
 
 import json
+import os
 import time
 from typing import Any
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 import requests
 import pytest
+
+os.environ.setdefault("DEEPSEEK_API_KEY", "sk-test")
 
 
 # ===========================================================================

@@ -9,6 +9,7 @@ Submit a GitHub PR URL and get an automated, structured code review powered by D
 - 🔗 **PR URL input** — paste any public GitHub PR link
 - 🔍 **Automatic diff extraction** — fetches PR metadata and unified diffs via GitHub API
 - 🤖 **LLM-powered analysis** — DeepSeek V4 Pro evaluates code quality, security, performance, and best practices
+- 🧭 **LangGraph workflow** — stateful review orchestration with retries, conditional error recovery, and future checkpoint extension
 - 📊 **Structured report** — score gauge, severity-categorized issues, code suggestions, file tree navigation
 - ⚡ **Async processing** — non-blocking; poll status while review runs in background
 - 📜 **History** — review records persisted for future reference
@@ -25,6 +26,7 @@ ai-pr-review/
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the full architecture design.
+The synchronous review path is now orchestrated by LangGraph while preserving the existing API response contract.
 
 ## Quick Start
 
@@ -69,6 +71,8 @@ Open **http://localhost:3000** → paste a PR URL → review!
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/api/v1/reviews` | Submit a new PR review |
+| `POST` | `/api/v1/review` | Synchronously review a PR via the LangGraph workflow |
+| `POST` | `/api/v1/review/raw` | Return the synchronous review report as Markdown |
 | `GET` | `/api/v1/reviews` | List all reviews (paginated) |
 | `GET` | `/api/v1/reviews/{id}` | Get review details |
 | `GET` | `/api/v1/health` | Health check |
@@ -132,6 +136,7 @@ ai-pr-review/
 | Layer | Technology |
 |-------|-----------|
 | Backend | Python 3.12, FastAPI, SQLAlchemy (async), SQLite |
+| Workflow | LangGraph |
 | Frontend | Next.js 14, React 18, TypeScript, Tailwind CSS |
 | AI | DeepSeek V4 Pro API |
 | Infra | Docker, Docker Compose |
