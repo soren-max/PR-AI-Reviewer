@@ -141,7 +141,7 @@ PR URL
 | **Diff Parsing** | regex + AST (Python ast module) |
 | **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
 | **Database** | SQLite (MVP) → PostgreSQL (production) |
-| **Testing** | pytest / unittest, 130+ tests |
+| **Testing** | pytest / unittest, root suite 177 tests + backend suite 89 tests |
 | **CI/CD** | GitHub Actions (lint → test → summary) |
 | **Code Quality** | ruff, flake8, mypy (strict) |
 | **Container** | Docker + Docker Compose |
@@ -324,7 +324,7 @@ python -m pytest tests/test_parser.py -v
 python -m pytest tests/ --cov-fail-under=80
 ```
 
-**Current test coverage**: 130+ tests across parser, client, diff, risk, and API tests.
+**Current verification baseline**: root suite 177 tests with 85%+ coverage, plus backend suite 89 tests across API, workflow, metrics, GitHub, LLM, report, and task paths.
 
 ---
 
@@ -353,7 +353,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 | Frontend | ✅ Next.js SPA |
 | LLM providers | ✅ DeepSeek / OpenAI / Qwen |
 | Observability | ✅ Review workflow metrics surfaced in API and frontend |
-| Test coverage | ✅ 130+ tests, ≥80% |
+| Test coverage | ✅ Root suite 177 tests, backend suite 89 tests, ≥80% |
 | CI/CD | ✅ GitHub Actions |
 | Enterprise docs | ✅ PRD / Roadmap / Acceptance / Workflow |
 | Context Retrieval | 📅 Stage 4 |
