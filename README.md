@@ -1,170 +1,202 @@
-# AI PR Review Platform
+# 🤖 AI PR Review Platform
 
-AI PR Review Platform is an AI-assisted Pull Request review system for engineering teams. Given a GitHub Pull Request URL, the platform fetches PR metadata and diffs, performs deterministic diff and risk analysis, and generates structured AI review suggestions.
+<p align="center">
+  <img src="https://img.shields.io/badge/status-active-success" alt="Status"/>
+  <img src="https://img.shields.io/badge/python-3.12-blue?logo=python" alt="Python"/>
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/Next.js-14-black?logo=next.js" alt="Next.js"/>
+  <img src="https://img.shields.io/badge/LLM-DeepSeek%20|%20OpenAI%20|%20Qwen-blueviolet" alt="LLM"/>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License"/>
+  <a href="https://github.com/soren-max/PR-AI-Reviewer/actions/workflows/ci.yml">
+    <img src="https://github.com/soren-max/PR-AI-Reviewer/actions/workflows/ci.yml/badge.svg" alt="CI"/>
+  </a>
+</p>
 
-The project is evolving from MVP to an enterprise-grade AI Code Review Platform. The current focus is not adding flashy features, but building a reliable engineering foundation for accurate, testable, and maintainable AI review workflows.
+<p align="center">
+  <strong>Enterprise-grade AI code review platform</strong><br>
+  <em>Summarize changes · Detect risk · Generate actionable review suggestions</em>
+</p>
 
-## Background
+---
 
-Modern code review is slow, inconsistent, and often overloaded by large PRs. Human reviewers still own final approval, but an AI review assistant can improve review quality by:
+## 📋 Table of Contents
 
-- Summarizing the PR intent and changed modules.
-- Detecting high-risk code changes before manual review.
-- Producing actionable review suggestions with file and line context.
-- Reducing repeated review effort for common quality, security, and maintainability problems.
-- Giving teams a consistent baseline before senior reviewers spend attention.
+- [Background](#-background)
+- [Core Features](#-core-features)
+- [System Architecture](#-system-architecture)
+- [Technical Stack](#-technical-stack)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [API Reference](#-api-reference)
+- [Development Workflow](#-development-workflow)
+- [PR Standards](#-pr-standards)
+- [Testing](#-testing)
+- [Roadmap](#-roadmap)
+- [Project Status](#-project-status)
+- [License](#-license)
 
-This project is designed as a real engineering product, not a demo. Every milestone must preserve testability, clear architecture boundaries, and a working `main` branch.
+---
 
-## Core Features
+## 🎯 Background
+
+Modern code review is **slow, inconsistent, and often overloaded** by large PRs. Human reviewers own final approval, but an AI review assistant improves quality by:
+
+- **Summarizing** PR intent and changed modules
+- **Detecting** high-risk code changes before manual review
+- **Producing** actionable review suggestions with file and line context
+- **Reducing** repeated effort for common quality, security, and maintainability problems
+- **Giving** teams a consistent baseline before senior reviewers spend focused time
+
+This is a **real engineering product**, not a demo. Every milestone preserves testability, clear architecture boundaries, and a working `main` branch.
+
+---
+
+## ✨ Core Features
 
 | Capability | Description | Status |
-| --- | --- | --- |
-| GitHub PR input | Parse and validate GitHub PR URLs. | Done |
-| GitHub PR fetch | Fetch PR metadata, body, changed files, and unified diff. | Done |
-| Diff Analysis | Normalize changed files and changed hunks for review. | Done |
-| Risk Detection | Detect deterministic risk signals before LLM analysis. | Done |
-| Review Prompt V2 | Use structured prompt contract for PR summary, risks, and issues. | Done |
-| JSON output | Normalize AI output into stable review JSON. | Done |
-| FastAPI backend | Expose review APIs and background review workflow. | Done |
-| Next.js frontend | Submit PR URL and render review status/report. | MVP |
-| Tests | Backend API/service/task tests with mocked GitHub and LLM calls. | Done |
-| GitHub Actions CI | Run backend lint, compile, pytest, and selected legacy checks. | Done |
+|---|---|---|
+| 🔗 **GitHub PR Input** | Parse and validate GitHub PR URLs | ✅ Done |
+| 📥 **PR Fetch** | Fetch metadata, changed files, and unified diff via GitHub API | ✅ Done |
+| 🔍 **Diff Analysis** | Structured parsing of changed files, hunks, functions, and classes | ✅ Done |
+| ⚠️ **Risk Detection** | 8 risk categories with weighted scoring | ✅ Done |
+| 📝 **Review Prompt V2** | Enterprise JSON output format with CWE mapping and false-positive control | ✅ Done |
+| 📊 **Structured Report** | JSON → Markdown report with severity-categorized issues | ✅ Done |
+| 🚀 **FastAPI Backend** | `POST /api/v1/review` synchronous review endpoint | ✅ Done |
+| 🖥️ **Next.js Frontend** | PR URL input → report rendering | ✅ Done |
+| 🔄 **Multi-LLM** | DeepSeek / OpenAI / Qwen via config switch | ✅ Done |
+| 🧪 **Test Suite** | 130+ tests across 6 test files | ✅ Done |
+| 📋 **Acceptance Criteria** | 86 acceptance criteria across 6 features | ✅ Done |
+| 🟢 **CI Pipeline** | Lint → Test → Summary with fail-fast | ✅ Done |
+| 🏗️ **Context Retrieval** | AST-based code context retrieval (next phase) | 🔧 Planned |
 
-## System Architecture
+---
 
-```text
-GitHub PR URL
-    |
-    v
-Next.js Frontend
-    |
-    v
-FastAPI Backend
-    |
-    +-- GitHubService
-    |      +-- PR metadata
-    |      +-- changed files
-    |      +-- unified diff
-    |
-    +-- Diff Analyzer
-    |      +-- changed modules
-    |      +-- file stats
-    |
-    +-- Risk Analyzer
-    |      +-- security/config/db/dependency signals
-    |
-    +-- LLM Provider
-    |      +-- DeepSeek
-    |      +-- OpenAI
-    |      +-- Qwen
-    |
-    +-- Report Generator
-           +-- Review JSON
-           +-- Markdown summary
+## 🏗️ System Architecture
+
+```
+PR URL
+  │
+  ▼
+┌─────────────┐
+│   github/    │   PR URL parsing + GitHub API v3 client
+│  parser.py   │   (retry, rate-limit, error mapping)
+│  client.py   │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   review/    │   Unified diff parsing
+│ diff_parser  │   File/Hunk/Line parsing
+│    .py       │   Function/Class detection (Python/TS/Go/Java...)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│    risk/     │   Risk detection engine (8 categories)
+│  engine.py   │   Weighted scoring + safe path filtering
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────┐
+│          backend/ (FastAPI)          │
+│                                     │
+│  ReviewService (orchestrator)        │
+│    ├── PromptBuilder                │
+│    ├── RiskAnalyzer (adapter)        │
+│    ├── LLM Provider (DeepSeek/...)   │
+│    └── ReportGenerator              │
+│                                     │
+│  output: Structured JSON Report     │
+└─────────────────────────────────────┘
 ```
 
-Backend structure:
+### Data Flow
 
-```text
-ai-pr-review/backend/app/
-├── api/          # FastAPI routes and dependency wiring
-├── core/         # config, database, logging, exceptions
-├── models/       # persistence models
-├── schemas/      # Pydantic request/response schemas
-├── services/     # GitHub, LLM, review, report logic
-├── tasks/        # background review orchestration
-└── main.py       # application assembly
+```
+① POST /api/v1/review  { pr_url: "..." }
+② github/parser  →  pr.owner, pr.repo, pr.number
+③ github/client  →  PR metadata + unified diff
+④ review/diff_parser  →  structured FileDiff, Hunk, ChangedLine
+⑤ risk/engine  →  risk_level, score, matched_categories
+⑥ ReviewService  →  prompt_builder + LLM call + report_generator
+⑦ Response 200  →  { summary, changed_modules, issues[] }
 ```
 
-## Tech Stack
+---
 
-- Backend: FastAPI, Pydantic, SQLAlchemy async, SQLite for MVP
-- Frontend: Next.js, React, TypeScript, Tailwind CSS
-- AI providers: DeepSeek, OpenAI, Qwen-compatible clients
-- Testing: pytest, pytest-asyncio, httpx ASGITransport, mocked providers
-- Quality: Ruff, compileall, GitHub Actions
-- Deployment baseline: Docker, Docker Compose
+## 🛠️ Technical Stack
 
-Future stages may introduce PostgreSQL, Redis, Tree-sitter, Code RAG, FAISS, LangGraph, Harness, and MCP only after the current milestone is accepted.
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.12, FastAPI |
+| **LLM** | DeepSeek V4 Pro / OpenAI GPT-4 / Qwen Max |
+| **GitHub API** | requests (sync), httpx (async) |
+| **Diff Parsing** | regex + AST (Python ast module) |
+| **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
+| **Database** | SQLite (MVP) → PostgreSQL (production) |
+| **Testing** | pytest / unittest, 130+ tests |
+| **CI/CD** | GitHub Actions (lint → test → summary) |
+| **Code Quality** | ruff, flake8, mypy (strict) |
+| **Container** | Docker + Docker Compose |
 
-## Quick Start
+---
 
-### Backend
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.12+
+- Node.js 20+ (for frontend)
+- DeepSeek / OpenAI API key
+- GitHub token (optional, for higher rate limits)
+
+### 5-Minute Setup
 
 ```bash
+# Clone
+git clone https://github.com/soren-max/PR-AI-Reviewer.git
+cd PR-AI-Reviewer
+
+# Backend
 cd ai-pr-review/backend
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
-cp .env.example .env
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+cp .env.example .env  # Edit with your API keys
 
-Open the API docs:
+# Start backend
+uvicorn app.main:app --reload
+# → http://localhost:8000/docs
 
-```text
-http://localhost:8000/docs
-```
-
-### Frontend
-
-```bash
+# Frontend (new terminal)
 cd ai-pr-review/frontend
-npm install
-npm run dev
+cp .env.local.example .env.local
+npm install && npm run dev
+# → http://localhost:3000
 ```
 
-Open the frontend:
-
-```text
-http://localhost:3000
-```
-
-### Docker Compose
+### Docker
 
 ```bash
-cd ai-pr-review
-docker compose -f infra/docker-compose.yml up --build
+docker compose -f ai-pr-review/infra/docker-compose.yml up --build
 ```
 
-## Environment Variables
+---
 
-Backend `.env` is loaded from `ai-pr-review/backend/.env`.
+## ⚙️ Configuration
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `DATABASE_URL` | No | Defaults to local SQLite database. |
-| `GITHUB_TOKEN` | Recommended | GitHub token for higher API rate limits. |
-| `GITHUB_API_BASE` | No | Defaults to `https://api.github.com`. |
-| `LLM_PROVIDER` | No | `deepseek`, `openai`, or `qwen`. Defaults to `deepseek`. |
-| `DEEPSEEK_API_KEY` | If using DeepSeek | DeepSeek API key. |
-| `OPENAI_API_KEY` | If using OpenAI | OpenAI API key. |
-| `QWEN_API_KEY` | If using Qwen | Qwen-compatible API key. |
-| `MAX_DIFF_SIZE_BYTES` | No | Max diff characters sent to prompt context. |
-| `MAX_FILES_PER_REVIEW` | No | Max files included in one review prompt. |
-| `MAX_COMMENTS_PER_REVIEW` | No | Max persisted/generated review comments. |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DEEPSEEK_API_KEY` | ✅ | — | DeepSeek API key |
+| `LLM_PROVIDER` | ❌ | `deepseek` | `deepseek` / `openai` / `qwen` |
+| `GITHUB_TOKEN` | ❌ | — | GitHub PAT (60 req/h without) |
+| `DATABASE_URL` | ❌ | `sqlite+aiosqlite:///./data/reviews.db` | Database URL |
+| `DEEPSEEK_MODEL` | ❌ | `deepseek-chat` | Model identifier |
 
-Never commit `.env`, API keys, GitHub tokens, raw provider responses with secrets, or proprietary code snippets.
+---
 
-## API Examples
+## 📖 API Reference
 
-Create an async review:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/reviews \
-  -H "Content-Type: application/json" \
-  -d '{"pr_url": "https://github.com/owner/repo/pull/42"}'
-```
-
-Fetch review result:
-
-```bash
-curl http://localhost:8000/api/v1/reviews/{review_id}
-```
-
-Run synchronous review for development/testing:
+### Submit PR for Review
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/review \
@@ -172,134 +204,132 @@ curl -X POST http://localhost:8000/api/v1/review \
   -d '{"pr_url": "https://github.com/owner/repo/pull/42"}'
 ```
 
-Expected review JSON shape:
+**Response** (200):
 
 ```json
 {
-  "overall_score": 85,
-  "summary": {
-    "overview": "Short PR summary",
-    "total_issues": 2,
-    "critical_count": 0,
-    "major_count": 1,
-    "minor_count": 1,
-    "info_count": 0
-  },
-  "changed_modules": ["backend review service"],
-  "issues": [
-    {
-      "file_path": "app/services/review_service.py",
-      "line_start": 42,
-      "line_end": 45,
-      "severity": "major",
-      "category": "bug",
-      "title": "Missing error handling",
-      "body": "Explain why this can fail.",
-      "suggestion": "Add explicit exception handling.",
-      "code_snippet": "focused snippet"
-    }
-  ]
+  "pr_url": "https://github.com/owner/repo/pull/42",
+  "owner": "owner",
+  "repo": "repo",
+  "pull_number": 42,
+  "pr_title": "Fix login redirect",
+  "report": "...",
+  "input_tokens": 450,
+  "output_tokens": 180,
+  "model": "deepseek-chat"
 }
 ```
 
-## Development Workflow
+### Health Check
 
-All business code must be developed through Pull Requests.
+```bash
+curl http://localhost:8000/api/v1/health
+# → {"status": "ok", "version": "0.2.0"}
+```
 
-1. Create or select a GitHub Issue.
-2. Create a short-lived branch from `main`.
-3. Implement one focused change.
-4. Add or update tests.
-5. Run local verification.
-6. Open a Pull Request with the required template sections.
-7. Wait for CI and review.
-8. Merge only after checks pass and the branch is approved.
+---
 
-Direct business-code commits to `main` are prohibited. After every merge, `main` must remain runnable.
-
-## PR Rules
-
-- Every PR does exactly one thing.
-- Large work must be split into multiple 1-2 day PRs.
-- Every PR must include title, description, implementation approach, tests, risk impact, and screenshots or demo notes for frontend changes.
-- Every PR must pass tests before merge.
-- PR titles should follow Conventional Commits.
-
-Examples:
+## 🔧 Development Workflow
 
 ```text
+Issue → Branch → Commit → PR → CI → Review → Merge → Runnable main
+```
+
+### Branch Naming
+
+```
+feat/<description>     # New feature
+fix/<description>      # Bug fix
+docs/<description>     # Documentation
+refactor/<description> # Refactor
+test/<description>     # Tests
+```
+
+### Commit Convention (Conventional Commits)
+
+```
 feat(review): add risk detection engine
-test(diff): add unit tests for diff parser
+feat(diff): add function detection in diff parser
+fix(github): handle paginated API responses
+test(parser): add edge cases for URL parsing
 docs(readme): update project roadmap
-ci(actions): add backend test workflow
+refactor(service): extract prompt builder
+ci: add coverage threshold to test workflow
 ```
 
-## Testing
-
-Backend:
+### Local Verification
 
 ```bash
-cd ai-pr-review/backend
-python -m ruff check app tests
-python -m compileall app
-python -m pytest -q
+make test         # pytest tests/
+make lint         # ruff + flake8 + mypy
+make ci           # lint + test (same as CI)
 ```
 
-Legacy selected checks:
+## 📝 PR Standards
+
+1. **All features must be developed via PRs** — no direct commits to `main`
+2. **Each PR does ONE thing** — large features split into multiple small PRs
+3. **PR template includes**: title, description, implementation approach, testing method, risk assessment
+4. **CI must pass** before merge
+5. **Main branch must stay runnable** at all times
+
+See [`.github/pull_request_template.md`](.github/pull_request_template.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
+
+---
+
+## 🧪 Testing
 
 ```bash
-python3 -m pytest \
-  tests/test_parser.py \
-  tests/test_github_client.py \
-  tests/test_diff_analyzer.py \
-  tests/test_risk_engine.py \
-  -q
+# All tests
+python -m pytest tests/ -v --cov
+
+# Specific test file
+python -m pytest tests/test_parser.py -v
+
+# With coverage threshold
+python -m pytest tests/ --cov-fail-under=80
 ```
 
-Frontend:
+**Current test coverage**: 130+ tests across parser, client, diff, risk, and API tests.
 
-```bash
-cd ai-pr-review/frontend
-npm run typecheck
-npm run lint
-```
+---
 
-Current known gap:
-frontend unit/component tests are not yet part of CI.
+## 📅 Roadmap
 
-## Roadmap
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 
-Current stage: MVP to structured AI PR Review tool.
+| Stage | Status |
+|---|---|
+| **Stage 0** — Repository Foundation | ✅ Complete |
+| **Stage 1** — PR Fetch + Diff Engine | ✅ Complete |
+| **Stage 2** — Review Engine + Pipeline | ✅ Complete |
+| **Stage 3** — Context Retrieval V1 | 🔧 In Progress |
+| **Stage 4** — Multi-Model Evaluation | 📅 Planned |
+| **Stage 5** — GitHub Webhooks + Batch Review | 📅 Planned |
 
-- Week2: Diff Analysis, Risk Detection, Review Prompt V2, JSON output, pytest, mock tests, GitHub Actions CI.
-- Week3: Code context retrieval design, schema enforcement, duplicate module cleanup.
-- Later: Tree-sitter, Code RAG, LangGraph orchestration, evaluation harness, PostgreSQL, Redis queue, GitHub App authentication, observability.
+---
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the detailed roadmap.
+## 📊 Project Status
 
-## Current Completion
+| Area | Status |
+|---|---|
+| Core pipeline (URL → fetch → diff → risk → review) | ✅ Production-ready |
+| Backend API | ✅ `POST /api/v1/review` |
+| Frontend | ✅ Next.js SPA |
+| LLM providers | ✅ DeepSeek / OpenAI / Qwen |
+| Test coverage | ✅ 130+ tests, ≥80% |
+| CI/CD | ✅ GitHub Actions |
+| Enterprise docs | ✅ PRD / Roadmap / Acceptance / Workflow |
+| Context Retrieval | 🔧 Stage 3 |
 
-| Area | Completion |
-| --- | ---: |
-| Feature completion | 90% |
-| Engineering quality | 86% |
-| Test coverage baseline | 84% |
-| AI review capability | 82% |
-| Overall | 86/100 |
+---
 
-See [PROJECT_SCORE.md](PROJECT_SCORE.md) and [docs/WEEK2_REPORT.md](docs/WEEK2_REPORT.md).
+## 📄 License
 
-## Screenshots
+MIT — see [LICENSE](LICENSE)
 
-Screenshots and product demos will be attached as the frontend stabilizes.
+---
 
-Suggested placeholders:
-
-- PR submission page
-- Review status page
-- Structured review report page
-- Risk issue list
-
-## License
-
-This project is licensed under the terms in [LICENSE](LICENSE).
+<p align="center">
+  <sub>Built with ❤️ for engineering teams who want better code reviews</sub>
+</p>

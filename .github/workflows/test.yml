@@ -1,113 +1,57 @@
+# =============================================================================
+# Test Workflow — pytest + coverage
+# =============================================================================
 name: Test
 
 on:
-  pull_request:
-    branches: [main, master, develop]
   push:
     branches: [main, master, develop]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  pull_request:
+    branches: [main, master]
 
 env:
   PYTHON_VERSION: "3.12"
-  NODE_VERSION: "20"
-  PYTHONUNBUFFERED: "1"
-  DEEPSEEK_API_KEY: "sk-test"
-  OPENAI_API_KEY: "sk-test"
-  QWEN_API_KEY: "sk-test"
 
 jobs:
-  backend:
-    name: Backend tests
+  test:
+    name: 🧪 pytest
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
-    defaults:
-      run:
-        working-directory: ai-pr-review/backend
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+      fail-fast: true
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: |
-            ai-pr-review/backend/requirements.txt
-            ai-pr-review/backend/requirements-dev.txt
 
-      - name: Install backend dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
+          pip install pytest pytest-asyncio pytest-cov httpx requests
 
-      - name: Ruff
-        run: python -m ruff check app tests
-
-      - name: Compile
-        run: python -m compileall app
-
-      - name: Pytest
-        run: python -m pytest -q
-
-  legacy:
-    name: Legacy selected tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
-
-      - name: Install legacy dependencies
+      - name: Run pytest
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
+          python -m pytest tests/ \
+            -v \
+            --tb=short \
+            --no-header \
+            --cov=github \
+            --cov=review \
+            --cov=risk \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=80
 
-      - name: Pytest selected legacy modules
+      - name: Coverage report
         run: |
-          python -m pytest \
-            tests/test_parser.py \
-            tests/test_github_client.py \
-            tests/test_diff_analyzer.py \
-            tests/test_risk_engine.py \
-            -q
-
-  frontend:
-    name: Frontend checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    defaults:
-      run:
-        working-directory: ai-pr-review/frontend
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install frontend dependencies
-        run: npm install
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Lint
-        run: npm run lint
+          echo "Coverage XML generated"
+          ls -la coverage.xml

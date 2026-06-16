@@ -1,65 +1,44 @@
 ---
 name: Bug Report
-about: Report a reproducible defect
-title: '[Bug] '
+about: Report a reproducible bug
+title: '[BUG] '
 labels: bug
 assignees: ''
 ---
 
-## Summary
+## Bug Description
 
-<!-- Clear one-paragraph description of the bug. -->
-
-## Impact
-
-<!-- Who is affected? What breaks? Is this P0/P1/P2? -->
+<!-- What happened?  What did you expect to happen? -->
 
 ## Steps to Reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behavior
 
-<!-- What should happen? -->
+<!-- What should have happened? -->
 
 ## Actual Behavior
 
-<!-- What actually happens? Include logs or screenshots if useful. -->
+<!-- What actually happened?  Include error messages, stack traces, or screenshots. -->
 
 ## Environment
 
-- OS:
-- Browser:
-- Python:
-- Node:
-- Commit SHA:
-- Backend or frontend:
+- **OS**: <!-- e.g. macOS 14.5, Ubuntu 22.04 -->
+- **Python version**: <!-- e.g. 3.12.3 -->
+- **Commit SHA**: <!-- e.g. a1b2c3d -->
+- **LLM provider**: <!-- e.g. deepseek, openai -->
 
-## Suspected Area
+## Minimal Reproduction
 
-<!-- API, GitHub integration, LLM provider, prompt, frontend, CI, docs, unknown. -->
+<!-- If possible, include a minimal code snippet or test case that reproduces the issue. -->
 
-## Acceptance Criteria
-
-- [ ] Bug is reproduced or explained.
-- [ ] Fix is implemented.
-- [ ] Regression test is added or updated.
-- [ ] Relevant checks pass.
-
-## Suggested Branch
-
-```text
-fix/<short-name>
-```
-
-## Suggested PR Title
-
-```text
-fix(scope): short description
+```python
+# Your code here
 ```
 
 ## Additional Context
 
-<!-- Links, logs, screenshots, affected PR URL, or related issues. -->
+<!-- Logs, screenshots, or any other relevant information. -->

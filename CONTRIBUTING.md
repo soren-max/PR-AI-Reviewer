@@ -1,229 +1,248 @@
-# Contributing
+# Contributing to AI PR Review Platform
 
-AI PR Review Platform follows a Pull Request based development workflow. The goal is to keep `main` runnable, keep reviews small, and make every change testable.
+Thank you for contributing. This document defines the development workflow, PR standards, and commit conventions for the project.
 
-## Core Rules
+## Table of Contents
 
-- All new features must be developed through Pull Requests.
-- Direct business-code commits to `main` are prohibited.
-- Every PR must do one thing.
-- Large features must be split into multiple small PRs.
-- Each PR should be small enough to finish in 1-2 working days.
-- Every PR must pass tests before merge.
-- After every merge, `main` must remain runnable.
+- [Code of Conduct](#code-of-conduct)
+- [Development Workflow](#development-workflow)
+- [Branch Strategy](#branch-strategy)
+- [Commit Convention](#commit-convention)
+- [Pull Request Standards](#pull-request-standards)
+- [PR Review Checklist](#pr-review-checklist)
+- [Testing Requirements](#testing-requirements)
+- [Getting Help](#getting-help)
 
-## Branch Naming
+## Code of Conduct
 
-Use short, descriptive branch names.
+All contributors must follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-Recommended patterns:
+## Development Workflow
 
 ```text
-feature/pr-url-parser
-feature/github-client
-feature/diff-analysis
-feature/risk-detection
-feature/review-json-output
-test/review-service
-ci/github-actions
-docs/development-workflow
-fix/github-pagination
-refactor/review-service
+Issue → Branch → Commit → PR → CI → Review → Merge → Runnable main
 ```
 
-## Pull Request Requirements
+### 1. Pick or Create an Issue
+
+- Find an existing issue or create a new one using the templates in `.github/ISSUE_TEMPLATE/`
+- Each issue describes one atomic unit of work
+- Large features should be split into multiple linked issues
+
+### 2. Create a Branch
+
+```bash
+git checkout -b feat/risk-engine
+```
+
+Branch naming:
+
+| Prefix | Usage |
+|---|---|
+| `feat/` | New feature |
+| `fix/` | Bug fix |
+| `docs/` | Documentation |
+| `refactor/` | Code refactor (no behavior change) |
+| `test/` | Test addition or improvement |
+| `ci/` | CI / build / pipeline changes |
+| `chore/` | Tooling, dependencies, config |
+
+### 3. Commit Early, Commit Often
+
+- Each commit should be a logical unit of change
+- Use [Conventional Commits](#commit-convention)
+- No single-commit PRs for large features — show your work
+
+### 4. Open a Pull Request
+
+- Fill out the PR template completely
+- Link to the issue(s) it resolves
+- Request review from at least one maintainer
+
+### 5. CI Must Pass
+
+- Lint, type-check, and test jobs must all pass
+- Coverage must meet the ≥80% threshold
+
+### 6. Review and Merge
+
+- At least one maintainer approval required
+- Squash merge recommended for clean history
+- Delete the branch after merge
+
+## Branch Strategy
+
+```
+main           ← Production-ready.  Always runnable.
+  │
+  ├── feat/*   ← Feature branches.  Short-lived.
+  ├── fix/*    ← Bug fixes.
+  ├── docs/*   ← Doc-only changes.
+  └── refactor/* ← Cleanup refactors.
+```
+
+**Rules**:
+
+1. **No direct commits to `main`** for business logic
+2. All changes merge via PR
+3. `main` must pass CI at all times
+4. Feature branches rebase on `main` before merge
+
+## Commit Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/) with scoped prefixes.
+
+### Format
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+### Types
+
+| Type | Usage | Example |
+|---|---|---|
+| `feat` | New feature | `feat(review): add risk detection engine` |
+| `fix` | Bug fix | `fix(github): handle paginated API responses` |
+| `docs` | Documentation | `docs(readme): update API reference` |
+| `test` | Test addition/update | `test(parser): add URL validation edge cases` |
+| `refactor` | Code refactor | `refactor(service): extract prompt builder module` |
+| `ci` | CI configuration | `ci: add coverage threshold to test workflow` |
+| `chore` | Tooling, deps | `chore: upgrade fastapi to 0.115` |
+
+### Scopes
+
+| Scope | Module |
+|---|---|
+| `github` | github/parser, github/client |
+| `review` | review/diff_parser, backend review service |
+| `risk` | risk/engine |
+| `prompt` | prompts/, prompt builder |
+| `api` | FastAPI routes |
+| `frontend` | Next.js frontend |
+| `docs` | Documentation |
+| `ci` | GitHub Actions |
+| `test` | Test suite |
+
+### Examples
+
+```
+feat(risk): add authentication and payment risk categories
+
+- Added RiskCategory dataclass with weight and patterns
+- Implemented 8 predefined risk categories
+- Added assess_risk() with file path pattern matching
+- Closes #12
+```
+
+```
+fix(github): handle 404 for deleted repositories
+
+When a PR references a deleted or private repository,
+the GitHub API returns 404.  Previously this crashed the
+parser; now it raises PRNotFoundError with a clear message.
+```
+
+```
+docs(readme): add architecture diagram and quick start
+```
+
+## Pull Request Standards
+
+### 1. Each PR Does ONE Thing
+
+- One feature, one fix, one refactor = one PR
+- Split large features: `feat/context-retrieval-part-1`, `feat/context-retrieval-part-2`
+
+### 2. PR Title Convention
+
+Follow the same format as commit messages:
+
+```
+feat(review): add context retrieval system
+fix(risk): correct false positive for migration files
+```
+
+### 3. PR Description Template
 
 Every PR must include:
 
-- Title
-- Feature or bug description
-- Implementation approach
-- Test method and test result
-- Risk impact
-- Screenshot or demo notes if frontend behavior changed
-- Linked Issue when applicable
+```markdown
+## Summary
+One-line description of the change.
 
-PR title should follow Conventional Commits:
+## Motivation
+Why this change is needed.  Link to the issue.
 
-```text
-feat(review): add risk detection engine
-fix(github): paginate pull request files
-test(diff): add unit tests for diff parser
-docs(readme): update project roadmap
-ci(actions): add backend test workflow
-refactor(review): isolate report generation
-chore(deps): update development dependencies
+## Implementation Approach
+Brief explanation of the technical approach.
+
+## Testing
+How was this tested?  Include test commands.
+
+## Risk Assessment
+What could go wrong?  Are there rollback considerations?
+
+## Screenshots
+If the change affects the UI, include before/after screenshots.
 ```
 
-## Conventional Commits
+### 4. PR Size Guidelines
 
-Use this format:
+| Size | Lines Changed | Recommended |
+|---|---|---|
+| Small | < 100 | ✅ Ideal |
+| Medium | 100-500 | ✅ Fine |
+| Large | 500-1000 | ⚠️ Split if possible |
+| XL | > 1000 | ❌ Must be split |
 
-```text
-<type>(<scope>): <description>
-```
+### 5. Invalid PRs
 
-Allowed types:
+The following will be rejected:
 
-| Type | Meaning |
-| --- | --- |
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `test` | Tests |
-| `refactor` | Code refactor without behavior change |
-| `chore` | Build, dependency, or repository maintenance |
-| `ci` | CI configuration |
+- PR with blank or template-only description
+- PR that combines multiple unrelated changes
+- PR that doesn't pass CI
+- PR without tests for new functionality
+- PR committed entirely in one push (no incremental commits)
 
-Examples:
+## PR Review Checklist
 
-```text
-feat(review): add risk detection engine
-test(diff): add unit tests for diff parser
-docs(readme): update project roadmap
-fix(github): handle deleted files in PR diff
-refactor(llm): extract provider interface
-ci(actions): run backend pytest on pull requests
-chore(repo): add issue templates
-```
+Before requesting review, verify:
 
-Commit rules:
+- [ ] Tests pass locally (`make test`)
+- [ ] Lint passes (`make lint`)
+- [ ] Type-check passes (`make typecheck`)
+- [ ] No debug prints or commented-out code
+- [ ] Documentation updated if API changed
+- [ ] All acceptance criteria from the linked issue are met
+- [ ] PR description is complete and accurate
 
-- One commit should represent one coherent change.
-- Do not mix unrelated refactors with feature work.
-- Include tests with code changes.
-- Do not commit secrets, `.env`, local databases, caches, or generated build outputs.
+## Testing Requirements
 
-## Local Development
-
-Backend setup:
+1. **New features must include tests** — minimum: happy path + error path
+2. **Bug fixes must include a regression test**
+3. **Coverage must not decrease** — maintain ≥80%
+4. **External API calls must be mocked** — use `@patch` or `unittest.mock`
 
 ```bash
-cd ai-pr-review/backend
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
-cp .env.example .env
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# Run all tests
+make test
+
+# Run specific test file
+python -m pytest tests/test_parser.py -v
+
+# Run with coverage report
+python -m pytest tests/ --cov --cov-report=term-missing
 ```
 
-Frontend setup:
+## Getting Help
 
-```bash
-cd ai-pr-review/frontend
-npm install
-npm run dev
-```
-
-Docker setup:
-
-```bash
-cd ai-pr-review
-docker compose -f infra/docker-compose.yml up --build
-```
-
-## Testing Rules
-
-All behavior changes require tests.
-
-Required test strategy:
-
-- Pure parsing/risk logic: unit tests.
-- GitHub API integration: mocked GitHub tests.
-- LLM provider integration: mocked provider/client tests.
-- FastAPI routes: API tests with dependency overrides.
-- Background tasks: task tests with mocked GitHub and LLM services.
-- Prompt changes: tests that assert required context is included and large inputs are bounded.
-- Bug fixes: regression test first when practical.
-
-Never call real GitHub or real LLM APIs in tests.
-
-Backend checks:
-
-```bash
-cd ai-pr-review/backend
-python -m ruff check app tests
-python -m compileall app
-python -m pytest -q
-```
-
-Legacy selected checks:
-
-```bash
-python3 -m pytest \
-  tests/test_parser.py \
-  tests/test_github_client.py \
-  tests/test_diff_analyzer.py \
-  tests/test_risk_engine.py \
-  -q
-```
-
-Frontend checks:
-
-```bash
-cd ai-pr-review/frontend
-npm run typecheck
-npm run lint
-```
-
-## Code Standards
-
-Follow [docs/PROJECT_RULES.md](docs/PROJECT_RULES.md).
-
-Key expectations:
-
-- Keep API routes thin.
-- Put business orchestration in services.
-- Keep provider-specific code behind provider classes.
-- Prefer explicit Pydantic schemas for API contracts.
-- Do not duplicate review logic across API, service, task, and frontend layers.
-- Do not log secrets, API keys, authorization headers, or full proprietary diffs/prompts.
-- Keep changes minimal and localized.
-
-## Review Checklist
-
-Before requesting review:
-
-- [ ] The PR does one thing.
-- [ ] The branch name is descriptive.
-- [ ] The PR title follows Conventional Commits.
-- [ ] Tests were added or updated.
-- [ ] Backend checks pass if backend changed.
-- [ ] Frontend checks pass if frontend changed.
-- [ ] Documentation was updated if behavior or workflow changed.
-- [ ] Risk impact is documented.
-- [ ] No secrets or local artifacts are committed.
-
-## Issue Workflow
-
-Use the issue templates under `.github/ISSUE_TEMPLATE/`.
-
-Feature issues should include:
-
-- Problem
-- Goal
-- Scope
-- Non-goals
-- Acceptance criteria
-- Suggested PR breakdown
-
-Bug reports should include:
-
-- Reproduction steps
-- Expected behavior
-- Actual behavior
-- Logs or screenshots
-- Environment
-- Suspected impact
-
-## Definition of Done
-
-A task is done only when:
-
-- Code or documentation is implemented.
-- Tests are added or updated when applicable.
-- Relevant checks pass.
-- PR description explains implementation and risk.
-- Review comments are addressed.
-- `main` remains runnable after merge.
+- **Questions**: Open a [Discussion](https://github.com/soren-max/PR-AI-Reviewer/discussions)
+- **Bugs**: Use the [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) template
+- **Features**: Use the [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) template
+- **Security**: Do NOT open a public issue. Contact maintainers directly.

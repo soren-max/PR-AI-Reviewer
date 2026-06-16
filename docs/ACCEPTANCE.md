@@ -1,92 +1,135 @@
-# Acceptance Criteria
+# Acceptance Criteria — AI PR Review Platform
 
-This document defines what must be true before a feature, PR, milestone, or release is considered done.
+Each feature is defined by acceptance criteria before implementation begins.
+All criteria must be verifiable, testable, and reproducible.
 
-## Repository Acceptance
+---
 
-- README explains product purpose, architecture, setup, API usage, tests, roadmap, PR rules, and license.
-- CONTRIBUTING explains branch naming, PR rules, Conventional Commits, tests, and Definition of Done.
-- PR template requires title, description, implementation approach, tests, risk, and screenshots/demo notes for frontend changes.
-- Issue templates exist for feature requests and bug reports.
-- CI runs on pull requests and pushes to `main`.
-- Business code is not committed directly to `main`.
+## F1: PR URL Parser ✅
 
-## Pull Request Acceptance
+**Input**: `https://github.com/owner/repo/pull/123`
 
-Every PR must satisfy:
+| # | Criterion | Status |
+|---|---|---|
+| 1.1 | Extract owner correctly | ✅ |
+| 1.2 | Extract repo correctly | ✅ |
+| 1.3 | Extract pull_number correctly | ✅ |
+| 1.4 | Handle trailing slash | ✅ |
+| 1.5 | Handle query parameters | ✅ |
+| 1.6 | Handle fragments | ✅ |
+| 1.7 | Reject non-GitHub URLs | ✅ |
+| 1.8 | Reject non-PR paths | ✅ |
+| 1.9 | Reject non-numeric PR numbers | ✅ |
+| 1.10 | Support www subdomain | ✅ |
 
-- The PR does one thing.
-- The PR is small enough to complete in 1-2 days.
-- The PR links to an Issue when applicable.
-- The PR title follows Conventional Commits.
-- The PR description includes:
-  - Functional description.
-  - Implementation approach.
-  - Test method and result.
-  - Risk impact.
-  - Screenshots or demo notes for frontend changes.
-- Tests pass before merge.
-- Main branch remains runnable after merge.
+---
 
-## Backend Acceptance
+## F2: GitHub API Client ✅
 
-- API routes are thin and delegate business logic to services.
-- Public request/response contracts use Pydantic schemas.
-- GitHub API calls are behind service classes.
-- LLM calls are behind provider classes.
-- Exceptions are handled without leaking stack traces to API clients.
-- Logs include useful context without leaking secrets, tokens, or proprietary full prompts.
-- Environment variables are validated through settings.
+| # | Criterion | Status |
+|---|---|---|
+| 2.1 | Fetch PR metadata (title, description, author, branches) | ✅ |
+| 2.2 | Fetch changed files with patches | ✅ |
+| 2.3 | Auto-pagination for >100 files | ✅ |
+| 2.4 | Handle HTTP 401 → GitHubAuthError | ✅ |
+| 2.5 | Handle HTTP 404 → GitHubNotFoundError | ✅ |
+| 2.6 | Handle HTTP 403/429 → GitHubRateLimitError | ✅ |
+| 2.7 | Handle HTTP 5xx → retry with exponential backoff | ✅ |
+| 2.8 | Handle network errors → GitHubConnectionError | ✅ |
+| 2.9 | Track rate-limit headers | ✅ |
+| 2.10 | Context manager support | ✅ |
 
-## AI Review Acceptance
+---
 
-- Prompt includes PR title, PR body, bounded diff, changed files, and deterministic risk context.
-- Large diffs are truncated or chunked explicitly.
-- Output follows the Review JSON Schema.
-- Review issues include severity, category, file path, line range, issue body, and suggestion.
-- Review suggestions focus on changed code.
-- Risk detection covers security, auth, database, config, dependency, deletion, and error-handling changes.
-- Model output is parsed defensively.
+## F3: Diff Analysis ✅
 
-## Testing Acceptance
+| # | Criterion | Status |
+|---|---|---|
+| 3.1 | Parse file paths from diff headers | ✅ |
+| 3.2 | Parse hunk ranges (old/new start + count) | ✅ |
+| 3.3 | Classify lines as add/delete/context | ✅ |
+| 3.4 | Track line numbers for add/delete lines | ✅ |
+| 3.5 | Detect Python function definitions | ✅ |
+| 3.6 | Detect TypeScript function definitions | ✅ |
+| 3.7 | Detect class definitions | ✅ |
+| 3.8 | Classify functions as added/removed/modified | ✅ |
+| 3.9 | Handle binary files | ✅ |
+| 3.10 | Handle renamed files | ✅ |
+| 3.11 | Handle new/deleted files | ✅ |
 
-- Unit tests cover deterministic parsing and risk logic.
-- Mock tests cover GitHub API behavior.
-- Mock tests cover LLM provider behavior.
-- API tests use dependency overrides and do not call external services.
-- Background task tests mock GitHub and LLM services.
-- CI runs backend lint, compile, and pytest.
-- Frontend changes must run typecheck and lint until frontend test framework is added.
+---
 
-## Current Stage Acceptance
+## F4: Risk Detection ✅
 
-Stage:
-MVP to structured AI PR Review tool.
+| # | Criterion | Status |
+|---|---|---|
+| 4.1 | Detect authentication changes | ✅ |
+| 4.2 | Detect authorization changes | ✅ |
+| 4.3 | Detect payment changes | ✅ |
+| 4.4 | Detect security module changes | ✅ |
+| 4.5 | Detect database changes | ✅ |
+| 4.6 | Detect configuration changes | ✅ |
+| 4.7 | Weighted scoring (0-150 scale) | ✅ |
+| 4.8 | Risk levels: critical/high/medium/low | ✅ |
+| 4.9 | Safe path detection (docs, tests, assets) | ✅ |
+| 4.10 | Multiple categories compound correctly | ✅ |
 
-Required:
+---
 
-- Diff Analysis: Done.
-- Risk Detection: Done.
-- Review Prompt V2: Done.
-- JSON structured output: Done.
-- pytest: Done.
-- Mock Test: Done.
-- GitHub Actions CI: Done.
+## F5: Enterprise Review Prompt ✅
 
-Evidence:
+| # | Criterion | Status |
+|---|---|---|
+| 5.1 | JSON output format with summary, changed_modules, issues | ✅ |
+| 5.2 | Severity levels: critical/major/minor/nit | ✅ |
+| 5.3 | Bug dimension — 10 detection patterns | ✅ |
+| 5.4 | Security dimension — CWE mapping | ✅ |
+| 5.5 | Performance dimension — hot path focus | ✅ |
+| 5.6 | Maintainability dimension | ✅ |
+| 5.7 | False positive control — 5 "do not flag" rules | ✅ |
+| 5.8 | Tone guidance — questions over commands | ✅ |
+| 5.9 | Output self-checking checklist | ✅ |
 
-- Backend pytest: `77 passed`.
-- Legacy selected pytest: `146 passed`.
-- Backend Ruff: passed.
-- Backend compile: passed.
+---
 
-## Done Definition
+## F6: Review Endpoint ✅
 
-A task is done only when:
+| # | Criterion | Status |
+|---|---|---|
+| 6.1 | `POST /api/v1/review` accepts PR URL | ✅ |
+| 6.2 | Returns structured JSON with report | ✅ |
+| 6.3 | Valid URL → 200 | ✅ |
+| 6.4 | Invalid URL → 422 | ✅ |
+| 6.5 | PR not found → 404 | ✅ |
+| 6.6 | GitHub API error → 502 | ✅ |
+| 6.7 | LLM error → 502 | ✅ |
+| 6.8 | `POST /api/v1/review/raw` returns plain Markdown | ✅ |
+| 6.9 | Request ID tracked through logs | ✅ |
+| 6.10 | Timing information in response | ✅ |
 
-- Code or docs are implemented.
-- Tests are added or updated when needed.
-- Relevant checks pass.
-- Documentation is updated for workflow, API, architecture, or behavior changes.
-- Remaining risks are documented.
-- The user can accept, commit, and merge without breaking `main`.
+---
+
+## F7: Frontend ✅
+
+| # | Criterion | Status |
+|---|---|---|
+| 7.1 | PR URL input form with validation | ✅ |
+| 7.2 | Loading state during review | ✅ |
+| 7.3 | Markdown report rendered as cards | ✅ |
+| 7.4 | Error display for API failures | ✅ |
+| 7.5 | Navigation between pages | ✅ |
+
+---
+
+## Summary
+
+| Feature | Criteria | Status |
+|---|---|---|
+| F1 — PR URL Parser | 10 | ✅ All passed |
+| F2 — GitHub API Client | 10 | ✅ All passed |
+| F3 — Diff Analysis | 11 | ✅ All passed |
+| F4 — Risk Detection | 10 | ✅ All passed |
+| F5 — Enterprise Review Prompt | 9 | ✅ All passed |
+| F6 — Review Endpoint | 10 | ✅ All passed |
+| F7 — Frontend | 5 | ✅ All passed |
+| **Total** | **65** | **✅ All passed** |

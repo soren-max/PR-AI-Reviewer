@@ -1,53 +1,45 @@
 ---
 name: Feature Request
-about: Propose a scoped product or engineering feature
-title: '[Feature] '
+about: Propose a new feature or enhancement
+title: '[FEAT] '
 labels: enhancement
 assignees: ''
 ---
 
-## Problem
+## Problem Statement
 
-<!-- What user or engineering problem does this solve? -->
+<!-- What problem would this feature solve?  Describe the pain point or use case. -->
 
-## Goal
+## Proposed Solution
 
-<!-- What should be true after this feature is done? -->
+<!-- Describe the feature in detail.  What would the interface look like? -->
 
-## Scope
+## Alternative Approaches
 
-<!-- What is included? Keep the issue small enough to split into 1-2 day PRs. -->
+<!-- What alternatives have you considered?  Why is this the best approach? -->
 
-## Non-Goals
+## Impact
 
-<!-- What is explicitly not included? -->
+- **Target users**: <!-- e.g. API consumers, frontend users, CI/CD pipelines -->
+- **Estimated effort**: <!-- Small / Medium / Large -->
+- **Breaking change**: <!-- Yes / No / Maybe -->
+
+## Example Usage
+
+<!-- If applicable, show how the feature would be used. -->
+
+```python
+# Code example
+```
 
 ## Acceptance Criteria
 
+<!-- What does "done" look like?  List verifiable conditions. -->
+
 - [ ] 
 - [ ] 
 - [ ] 
-
-## Suggested Branch
-
-```text
-feature/<short-name>
-```
-
-## Suggested PR Title
-
-```text
-feat(scope): short description
-```
-
-## Test Plan
-
-<!-- Which tests should be added or updated? -->
-
-## Risk Impact
-
-<!-- Accuracy, latency, token cost, API compatibility, security, deployment, or UX risk. -->
 
 ## Additional Context
 
-<!-- Links, screenshots, references, or prior discussion. -->
+<!-- Screenshots, references, or links to prior discussions. -->
