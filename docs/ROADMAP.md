@@ -67,6 +67,7 @@ Each stage must be complete before the next begins.
 | Backwards-compatible `ReviewService` facade | ✅ Complete |
 | Workflow unit, node, integration, API compatibility, and mocked external API tests | ✅ Complete |
 | Review workflow observability metrics in API and frontend | ✅ Complete |
+| Sprint Review and Retrospective documentation | ✅ Complete |
 
 ---
 
