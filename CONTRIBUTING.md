@@ -1,199 +1,229 @@
-# Contributing to AI PR Review
+# Contributing
 
-Thank you for considering contributing! This document provides guidelines to keep the codebase maintainable and reviews productive.
+AI PR Review Platform follows a Pull Request based development workflow. The goal is to keep `main` runnable, keep reviews small, and make every change testable.
 
-## Table of Contents
+## Core Rules
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Pull Request Process](#pull-request-process)
-- [Commit Message Convention](#commit-message-convention)
-- [Reporting Issues](#reporting-issues)
+- All new features must be developed through Pull Requests.
+- Direct business-code commits to `main` are prohibited.
+- Every PR must do one thing.
+- Large features must be split into multiple small PRs.
+- Each PR should be small enough to finish in 1-2 working days.
+- Every PR must pass tests before merge.
+- After every merge, `main` must remain runnable.
 
-## Code of Conduct
+## Branch Naming
 
-All contributors must adhere to our [Code of Conduct](./CODE_OF_CONDUCT.md).
+Use short, descriptive branch names.
 
-## Getting Started
+Recommended patterns:
 
-1. Fork the repository and clone your fork.
-2. Read the [README](./README.md) for project overview.
-3. Set up the development environment as described below.
-4. Find an issue to work on — look for labels `good first issue` or `help wanted`.
-
-## Development Setup
-
-### Prerequisites
-
-- **Python** 3.11+
-- **pip** (latest)
-
-### Step-by-step
-
-```bash
-# 1. Clone your fork
-git clone https://github.com/YOUR_USERNAME/ai-pr-review.git
-cd ai-pr-review
-
-# 2. Create virtual environment
-python -m venv .venv
-source .venv/bin/activate     # Linux/macOS
-# .venv\Scripts\activate      # Windows
-
-# 3. Install dependencies
-pip install -r requirements-dev.txt
-
-# 4. Copy environment variables
-cp .env.example .env
-# Edit .env — set OPENAI_API_KEY (required)
-
-# 5. Verify setup
-make test
-make lint
+```text
+feature/pr-url-parser
+feature/github-client
+feature/diff-analysis
+feature/risk-detection
+feature/review-json-output
+test/review-service
+ci/github-actions
+docs/development-workflow
+fix/github-pagination
+refactor/review-service
 ```
 
-## Coding Standards
+## Pull Request Requirements
 
-### Python
+Every PR must include:
 
-- **Style**: [PEP 8](https://peps.python.org/pep-0008/), enforced by **ruff** and **flake8**
-- **Type annotations**: Required for all functions (checked by **mypy** in `--strict` mode)
-- **Formatting**: **ruff formatter** (line length 88)
-- **Imports**: sorted via **ruff** (isort-compatible grouping):
-  1. Standard library
-  2. Third-party
-  3. First-party (`app.*`)
-  4. Type-only
-- **Naming**:
-  - `snake_case` for functions, methods, variables
-  - `PascalCase` for classes
-  - `UPPER_CASE` for constants
+- Title
+- Feature or bug description
+- Implementation approach
+- Test method and test result
+- Risk impact
+- Screenshot or demo notes if frontend behavior changed
+- Linked Issue when applicable
 
-### Docstrings
+PR title should follow Conventional Commits:
 
-Use **Google-style** docstrings for all public APIs:
-
-```python
-def analyze_pr(diff: str, model: str = "gpt-4") -> ReviewResult:
-    """Run AI analysis on a PR diff.
-
-    Args:
-        diff: Unified diff string of the PR.
-        model: OpenAI model identifier.
-
-    Returns:
-        ReviewResult containing issues and score.
-
-    Raises:
-        AIClientError: If the API call fails or returns invalid output.
-    """
+```text
+feat(review): add risk detection engine
+fix(github): paginate pull request files
+test(diff): add unit tests for diff parser
+docs(readme): update project roadmap
+ci(actions): add backend test workflow
+refactor(review): isolate report generation
+chore(deps): update development dependencies
 ```
 
-### File Organization
+## Conventional Commits
 
-| File | Responsibility |
-|------|---------------|
-| `app/main.py` | Application entry point, CLI or server |
-| `app/github_client.py` | GitHub API client (PR metadata, diff fetching) |
-| `app/ai_reviewer.py` | LLM interaction, prompt construction, response parsing |
-| `tests/` | pytest test suite, mirroring `app/` structure |
+Use this format:
 
-## Testing
-
-- **Framework**: pytest with pytest-asyncio
-- **Coverage target**: ≥ 85% (enforced in CI)
-- **Test location**: `tests/`, mirror the `app/` module structure
-- **External calls**: Always mock GitHub API and OpenAI API in unit tests
-
-```bash
-# Run all tests
-make test
-
-# Run with coverage report
-make test-cov
-
-# Run a specific test file
-python -m pytest tests/test_ai_reviewer.py -v
-
-# Run tests matching a keyword
-python -m pytest -k "parse_prompt"
+```text
+<type>(<scope>): <description>
 ```
 
-### Test Structure
+Allowed types:
 
-```python
-# tests/test_ai_reviewer.py
-class TestBuildPrompt:
-    def test_includes_diff_content(self):
-        ...
-
-class TestParseResponse:
-    def test_valid_json(self):
-        ...
-
-    def test_malformed_json_raises(self):
-        ...
-```
-
-## Pull Request Process
-
-1. **Create a feature branch** from `main`:
-
-   ```bash
-   git checkout -b feat/my-feature-name
-   ```
-
-2. **Make your changes**, keeping commits focused and atomic.
-3. **Run all checks locally**:
-
-   ```bash
-   make ci       # lint → typecheck → test
-   ```
-
-4. **Push and open a PR** against `main`.
-5. **Fill out the PR template** completely.
-6. **Respond to reviewer feedback** with commits (no force-push during review unless necessary).
-7. **A maintainer will merge** once all checks pass and at least one approval is received.
-
-### PR Title Convention
-
-Use [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <short summary>
+| Type | Meaning |
+| --- | --- |
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `test` | Tests |
+| `refactor` | Code refactor without behavior change |
+| `chore` | Build, dependency, or repository maintenance |
+| `ci` | CI configuration |
 
 Examples:
-  feat(analyzer): add support for multi-file chunking
-  fix(github): handle paginated file responses
-  docs: add architecture decision record for SQLite
-  refactor(ai): extract prompt builder into separate module
+
+```text
+feat(review): add risk detection engine
+test(diff): add unit tests for diff parser
+docs(readme): update project roadmap
+fix(github): handle deleted files in PR diff
+refactor(llm): extract provider interface
+ci(actions): run backend pytest on pull requests
+chore(repo): add issue templates
 ```
 
-## Commit Message Convention
+Commit rules:
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+- One commit should represent one coherent change.
+- Do not mix unrelated refactors with feature work.
+- Include tests with code changes.
+- Do not commit secrets, `.env`, local databases, caches, or generated build outputs.
 
+## Local Development
+
+Backend setup:
+
+```bash
+cd ai-pr-review/backend
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-dev.txt
+cp .env.example .env
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-<type>(<scope>): <description>
 
-[optional body]
+Frontend setup:
 
-[optional footer(s)]
+```bash
+cd ai-pr-review/frontend
+npm install
+npm run dev
 ```
 
-Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`.
+Docker setup:
 
-## Reporting Issues
+```bash
+cd ai-pr-review
+docker compose -f infra/docker-compose.yml up --build
+```
 
-See the [issue templates](.github/ISSUE_TEMPLATE/) for bug reports and feature requests. A good issue includes:
+## Testing Rules
 
-- Clear, minimal reproduction steps
-- Expected vs. actual behavior
-- Environment details (OS, Python version, package version)
+All behavior changes require tests.
 
----
+Required test strategy:
 
-*Thank you for helping improve AI PR Review!*
+- Pure parsing/risk logic: unit tests.
+- GitHub API integration: mocked GitHub tests.
+- LLM provider integration: mocked provider/client tests.
+- FastAPI routes: API tests with dependency overrides.
+- Background tasks: task tests with mocked GitHub and LLM services.
+- Prompt changes: tests that assert required context is included and large inputs are bounded.
+- Bug fixes: regression test first when practical.
+
+Never call real GitHub or real LLM APIs in tests.
+
+Backend checks:
+
+```bash
+cd ai-pr-review/backend
+python -m ruff check app tests
+python -m compileall app
+python -m pytest -q
+```
+
+Legacy selected checks:
+
+```bash
+python3 -m pytest \
+  tests/test_parser.py \
+  tests/test_github_client.py \
+  tests/test_diff_analyzer.py \
+  tests/test_risk_engine.py \
+  -q
+```
+
+Frontend checks:
+
+```bash
+cd ai-pr-review/frontend
+npm run typecheck
+npm run lint
+```
+
+## Code Standards
+
+Follow [docs/PROJECT_RULES.md](docs/PROJECT_RULES.md).
+
+Key expectations:
+
+- Keep API routes thin.
+- Put business orchestration in services.
+- Keep provider-specific code behind provider classes.
+- Prefer explicit Pydantic schemas for API contracts.
+- Do not duplicate review logic across API, service, task, and frontend layers.
+- Do not log secrets, API keys, authorization headers, or full proprietary diffs/prompts.
+- Keep changes minimal and localized.
+
+## Review Checklist
+
+Before requesting review:
+
+- [ ] The PR does one thing.
+- [ ] The branch name is descriptive.
+- [ ] The PR title follows Conventional Commits.
+- [ ] Tests were added or updated.
+- [ ] Backend checks pass if backend changed.
+- [ ] Frontend checks pass if frontend changed.
+- [ ] Documentation was updated if behavior or workflow changed.
+- [ ] Risk impact is documented.
+- [ ] No secrets or local artifacts are committed.
+
+## Issue Workflow
+
+Use the issue templates under `.github/ISSUE_TEMPLATE/`.
+
+Feature issues should include:
+
+- Problem
+- Goal
+- Scope
+- Non-goals
+- Acceptance criteria
+- Suggested PR breakdown
+
+Bug reports should include:
+
+- Reproduction steps
+- Expected behavior
+- Actual behavior
+- Logs or screenshots
+- Environment
+- Suspected impact
+
+## Definition of Done
+
+A task is done only when:
+
+- Code or documentation is implemented.
+- Tests are added or updated when applicable.
+- Relevant checks pass.
+- PR description explains implementation and risk.
+- Review comments are addressed.
+- `main` remains runnable after merge.

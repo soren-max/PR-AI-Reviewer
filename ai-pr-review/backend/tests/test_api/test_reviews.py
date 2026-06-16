@@ -4,14 +4,29 @@ Integration tests for Review API endpoints.
 import pytest
 from httpx import AsyncClient
 
+from app.main import app
+
+
+@pytest.fixture
+def override_background_review(monkeypatch):
+    """Prevent API tests from executing the real background review pipeline."""
+    async def noop_run_review(review_id: str, db_engine) -> None:
+        return None
+
+    monkeypatch.setattr("app.api.v1.reviews.run_review", noop_run_review)
+
 
 class TestCreateReview:
-    async def test_create_review_success(self, async_client: AsyncClient, mock_github_service):
+    async def test_create_review_success(
+        self,
+        async_client: AsyncClient,
+        mock_github_service,
+        override_background_review,
+    ):
         """Should return 201 with review metadata."""
-        from app.api.deps import get_db
-        from app.services.github import GitHubService
+        from app.api.v1.reviews import GitHubService
 
-        async_client.app.dependency_overrides[GitHubService] = lambda: mock_github_service
+        app.dependency_overrides[GitHubService] = lambda: mock_github_service
 
         payload = {"pr_url": "https://github.com/owner/repo/pull/42"}
         resp = await async_client.post("/api/v1/reviews", json=payload)
@@ -44,10 +59,15 @@ class TestGetReview:
         assert resp.status_code == 404
         assert resp.json()["error"]["code"] == "PR_NOT_FOUND"
 
-    async def test_get_review_pending(self, async_client: AsyncClient, mock_github_service):
+    async def test_get_review_pending(
+        self,
+        async_client: AsyncClient,
+        mock_github_service,
+        override_background_review,
+    ):
         """Should return basic info for pending review."""
-        from app.services.github import GitHubService
-        async_client.app.dependency_overrides[GitHubService] = lambda: mock_github_service
+        from app.api.v1.reviews import GitHubService
+        app.dependency_overrides[GitHubService] = lambda: mock_github_service
 
         create_resp = await async_client.post(
             "/api/v1/reviews",
@@ -71,10 +91,15 @@ class TestListReviews:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_list_pagination(self, async_client: AsyncClient, mock_github_service):
+    async def test_list_pagination(
+        self,
+        async_client: AsyncClient,
+        mock_github_service,
+        override_background_review,
+    ):
         """Should respect pagination parameters."""
-        from app.services.github import GitHubService
-        async_client.app.dependency_overrides[GitHubService] = lambda: mock_github_service
+        from app.api.v1.reviews import GitHubService
+        app.dependency_overrides[GitHubService] = lambda: mock_github_service
 
         # Create 3 reviews
         for i in range(3):

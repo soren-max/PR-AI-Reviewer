@@ -3,7 +3,7 @@ LLM client — communicates with DeepSeek V4 Pro API.
 Implements retry with exponential backoff.
 """
 import asyncio
-import json
+import inspect
 from dataclasses import dataclass
 from typing import Optional
 
@@ -94,6 +94,8 @@ class LLMClient:
 
                 if response.status_code == 200:
                     data = response.json()
+                    if inspect.isawaitable(data):
+                        data = await data
                     choice = data["choices"][0]
                     usage = data.get("usage", {})
 
@@ -116,7 +118,10 @@ class LLMClient:
                 else:
                     logger.error("LLM API error: %s %s", response.status_code, response.text[:200])
                     if attempt == self._max_retries:
-                        raise LLMAPIError(f"DeepSeek API returned {response.status_code}")
+                        raise LLMAPIError(
+                            f"LLM API call failed after {self._max_retries} retries "
+                            f"(last status: {response.status_code})"
+                        )
                     await asyncio.sleep(self._backoff * (2 ** (attempt - 1)))
 
             except httpx.TimeoutException as exc:

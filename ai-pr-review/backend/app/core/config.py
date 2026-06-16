@@ -3,8 +3,8 @@ Application configuration via Pydantic Settings.
 All environment variables are validated at startup.
 """
 from enum import Enum
-from typing import Optional
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -78,6 +78,17 @@ class Settings(BaseSettings):
     MAX_DIFF_SIZE_BYTES: int = 500_000
     MAX_FILES_PER_REVIEW: int = 20
     MAX_COMMENTS_PER_REVIEW: int = 30
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, value: object) -> bool:
+        """Parse DEBUG defensively because CI hosts may set values like release."""
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return False
+        normalized = str(value).strip().lower()
+        return normalized in {"1", "true", "yes", "on", "debug", "dev", "development"}
 
     @property
     def is_sqlite(self) -> bool:

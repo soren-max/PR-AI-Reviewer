@@ -55,6 +55,7 @@ _FALLBACK_PR_RE: Final[Pattern[str]] = re.compile(
     r"(?P<repo>[\w.\-]+)/"
     r"pull/"
     r"(?P<pr_number>\d+)"
+    r"/?(?:\?.*)?(?:#.*)?$"
 )
 
 #: GitHub owner naming rules:
@@ -67,7 +68,7 @@ _OWNER_RE: Final[Pattern[str]] = re.compile(r"^[a-zA-Z0-9](?:[\w.\-]{0,37}[a-zA-
 #: GitHub repo naming rules:
 #:   - Alphanumeric, hyphens, dots, underscores
 #:   - Max 100 characters
-_REPO_RE: Final[Pattern[str]] = re.compile(r"^[\w.\-]{1,100}$")
+_REPO_RE: Final[Pattern[str]] = re.compile(r"^[a-zA-Z0-9](?:[\w.\-]{0,98}[a-zA-Z0-9])?$")
 
 # ---------------------------------------------------------------------------
 # Custom exceptions

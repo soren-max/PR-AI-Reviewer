@@ -1,43 +1,53 @@
 ---
 name: Feature Request
-about: Suggest an idea for this project
-title: '[FEAT] '
+about: Propose a scoped product or engineering feature
+title: '[Feature] '
 labels: enhancement
 assignees: ''
 ---
 
-## Problem Statement
+## Problem
 
-<!-- Is your feature request related to a problem? Describe the pain point. -->
+<!-- What user or engineering problem does this solve? -->
 
-**Example:** *I'm always frustrated when I have to manually...*
+## Goal
 
-## Proposed Solution
+<!-- What should be true after this feature is done? -->
 
-<!-- Describe the solution you'd like in enough detail that a contributor
-     could implement it. What is the expected interface? -->
+## Scope
 
-## Alternative Approaches
+<!-- What is included? Keep the issue small enough to split into 1-2 day PRs. -->
 
-<!-- Describe alternatives you've considered. This helps us understand
-     the trade-offs. -->
+## Non-Goals
 
-## Impact
+<!-- What is explicitly not included? -->
 
-<!-- How does this feature benefit the project and its users? -->
+## Acceptance Criteria
 
-- **Target users**: <!-- e.g. all users, CLI users, API consumers -->
-- **Estimated effort**: <!-- small / medium / large — optional, rough guess -->
-- **Breaking change?**: <!-- yes / no / unsure -->
+- [ ] 
+- [ ] 
+- [ ] 
 
-## Example Usage
+## Suggested Branch
 
-<!-- If applicable, show how the feature would be used in code or CLI. -->
-
-```python
-
+```text
+feature/<short-name>
 ```
+
+## Suggested PR Title
+
+```text
+feat(scope): short description
+```
+
+## Test Plan
+
+<!-- Which tests should be added or updated? -->
+
+## Risk Impact
+
+<!-- Accuracy, latency, token cost, API compatibility, security, deployment, or UX risk. -->
 
 ## Additional Context
 
-<!-- Screenshots, references, or links to prior discussions. -->
+<!-- Links, screenshots, references, or prior discussion. -->

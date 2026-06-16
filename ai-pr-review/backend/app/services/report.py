@@ -4,7 +4,6 @@ Report generator — parses raw LLM output into structured ReviewReport.
 import json
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 from app.core.config import settings
 from app.core.exceptions import ReportParseError
@@ -77,10 +76,10 @@ class ReportGenerator:
             if report:
                 return report
 
-        # Strategy 3: Any { } block
-        brace_match = re.search(r"\{.*\}", content, re.DOTALL)
-        if brace_match:
-            report = ReportGenerator._try_parse_json(brace_match.group(0))
+        # Strategy 3: First balanced JSON object in surrounding prose
+        json_object = ReportGenerator._extract_balanced_json_object(content)
+        if json_object:
+            report = ReportGenerator._try_parse_json(json_object)
             if report:
                 return report
 
@@ -166,3 +165,38 @@ class ReportGenerator:
             info_count=score_map.get("info", 0),
             issues=issues,
         )
+
+    @staticmethod
+    def _extract_balanced_json_object(text: str) -> str | None:
+        """Extract the first balanced JSON object from mixed LLM text."""
+        start = text.find("{")
+        while start != -1:
+            depth = 0
+            in_string = False
+            escaped = False
+
+            for index in range(start, len(text)):
+                char = text[index]
+                if escaped:
+                    escaped = False
+                    continue
+                if char == "\\":
+                    escaped = True
+                    continue
+                if char == '"':
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+                if char == "{":
+                    depth += 1
+                elif char == "}":
+                    depth -= 1
+                    if depth == 0:
+                        candidate = text[start:index + 1]
+                        if ReportGenerator._try_parse_json(candidate):
+                            return candidate
+                        break
+
+            start = text.find("{", start + 1)
+        return None

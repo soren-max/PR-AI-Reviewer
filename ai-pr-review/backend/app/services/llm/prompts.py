@@ -67,6 +67,7 @@ def build_review_prompt(
     pr_description: str,
     diff: str,
     language: str = "zh",
+    risk_context: str = "",
 ) -> Tuple[str, str]:
     """Build the system and user prompts for a PR review.
 
@@ -75,6 +76,7 @@ def build_review_prompt(
         pr_description: Pull Request description / body.
         diff: Unified diff output of the PR.
         language: Output language (``"zh"`` or ``"en"``).
+        risk_context: Optional deterministic risk hints from pre-LLM analysis.
 
     Returns:
         Tuple of ``(system_prompt, user_prompt)``.
@@ -106,6 +108,9 @@ def build_review_prompt(
 
 ### Description
 {pr_description or "_No description provided._"}
+
+### Risk Context
+{risk_context or "_No high-risk modules detected._"}
 
 ### Changed Files
 ```diff

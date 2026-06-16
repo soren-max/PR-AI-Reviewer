@@ -55,6 +55,7 @@ class TestGitHubService:
         service = GitHubService()
         mock_response = {
             "title": "Add feature",
+            "body": "Detailed PR description",
             "user": {"login": "octocat"},
             "base": {"ref": "main"},
             "head": {"ref": "feat/feature"},
@@ -67,6 +68,7 @@ class TestGitHubService:
             mock_get.return_value.json = AsyncMock(return_value=mock_response)
             meta = await service.fetch_pr_metadata("owner", "repo", 1)
             assert meta.title == "Add feature"
+            assert meta.description == "Detailed PR description"
             assert meta.author == "octocat"
             assert meta.additions == 100
 
@@ -86,3 +88,38 @@ class TestGitHubService:
             assert diffs[0].patch is None
             assert diffs[1].is_binary is False
             assert diffs[1].patch is not None
+
+    @pytest.mark.asyncio
+    async def test_fetch_pr_diff_paginates_and_normalizes_removed(self):
+        service = GitHubService()
+        first_page = [
+            {
+                "filename": f"src/file_{idx}.py",
+                "status": "modified",
+                "additions": 1,
+                "deletions": 0,
+                "patch": "@@ -1 +1 @@\n+change",
+            }
+            for idx in range(100)
+        ]
+        second_page = [
+            {
+                "filename": "src/deleted.py",
+                "status": "removed",
+                "additions": 0,
+                "deletions": 5,
+                "patch": None,
+            }
+        ]
+
+        with patch.object(service._client, "get") as mock_get:
+            mock_get.side_effect = [
+                type("Resp", (), {"status_code": 200, "json": lambda self: first_page})(),
+                type("Resp", (), {"status_code": 200, "json": lambda self: second_page})(),
+            ]
+            diffs = await service.fetch_pr_diff("owner", "repo", 1)
+
+        assert len(diffs) == 101
+        assert diffs[-1].status == "deleted"
+        assert diffs[-1].is_binary is True
+        assert mock_get.call_count == 2

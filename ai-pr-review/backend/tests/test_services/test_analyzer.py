@@ -2,6 +2,7 @@
 Unit tests for Analyzer service (prompt builder).
 """
 from app.services.analyzer import build_system_prompt, build_user_prompt
+from app.core.config import settings
 from app.services.github import PRMetadata, FileDiff
 
 
@@ -55,3 +56,26 @@ def test_build_user_prompt_respects_focus_areas():
     )
     prompt = build_user_prompt(pr_info, [], options={"focus_areas": ["security"]})
     assert "security" in prompt
+
+
+def test_build_user_prompt_truncates_total_diff_size(monkeypatch):
+    monkeypatch.setattr(settings, "MAX_DIFF_SIZE_BYTES", 20)
+    pr_info = PRMetadata(
+        title="Large diff", author="bot", base_branch="main", head_branch="large",
+        changed_files_count=1, additions=100, deletions=0,
+    )
+    diffs = [
+        FileDiff(
+            filename="src/large.py",
+            status="modified",
+            additions=100,
+            deletions=0,
+            patch="x" * 100,
+        )
+    ]
+
+    prompt = build_user_prompt(pr_info, diffs)
+
+    assert len(prompt) < 500
+    assert "diff truncated" in prompt
+    assert "Some files were omitted" in prompt

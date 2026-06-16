@@ -1,7 +1,7 @@
 """
 Common Pydantic schemas — pagination, error responses, etc.
 """
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class ErrorDetail(BaseModel):

@@ -4,7 +4,7 @@ Abstract base class for all LLM provider implementations.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -90,6 +90,7 @@ class BaseLLMService(ABC):
         pr_description: str,
         diff: str,
         language: str = "zh",
+        risk_context: str = "",
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
     ) -> LLMReviewResponse:
@@ -101,6 +102,7 @@ class BaseLLMService(ABC):
             diff: The unified diff output of the PR (changed files with patches).
             language: Output language — ``"zh"`` (Chinese, default) or
                       ``"en"`` (English).
+            risk_context: Optional deterministic risk hints from file/path analysis.
             max_tokens: Maximum completion tokens (overrides config default).
             temperature: Sampling temperature (overrides config default).
 

@@ -6,7 +6,7 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import LLMProvider, settings
+from app.core.config import LLMProvider
 from app.core.database import async_session_factory
 from app.services.llm import BaseLLMService, get_llm_service
 

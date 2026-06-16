@@ -3,7 +3,6 @@ Pydantic schemas for Review-related API requests and responses.
 """
 import re
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 

@@ -66,17 +66,18 @@ async def run_review(review_id: str, db_engine: AsyncEngine) -> None:
 
             async with GitHubService() as github:
                 pr_meta = await github.fetch_pr_metadata(
-                    owner=review.owner, repo=review.repo, pr_number=review.pr_number,
+                    owner=review.owner, repo=review.repo, number=review.pr_number,
                 )
                 diffs = await github.fetch_pr_diff(
-                    owner=review.owner, repo=review.repo, pr_number=review.pr_number,
+                    owner=review.owner, repo=review.repo, number=review.pr_number,
                 )
 
             review.pr_title = pr_meta.title
 
             # Persist file metadata
+            status_map = {status.value: status for status in FileStatus}
             for diff in diffs:
-                file_status = FileStatus(diff.status) if diff.status in [s.value for s in FileStatus] else FileStatus.MODIFIED
+                file_status = status_map.get(diff.status, FileStatus.MODIFIED)
                 db.add(ReviewFile(
                     review_id=review_id,
                     file_path=diff.filename,

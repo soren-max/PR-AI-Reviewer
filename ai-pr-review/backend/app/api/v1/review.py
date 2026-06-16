@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import time
+import inspect
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -14,12 +15,40 @@ from fastapi.responses import PlainTextResponse
 
 from app.core.exceptions import GitHubAPIError, InvalidPRUrlError, PRNotFoundError
 from app.schemas.review_request import ReviewRequest, ReviewResponse
-from app.services.github import parse_pr_url
+from app.services.github import GitHubService, parse_pr_url
+from app.services.llm.base import BaseLLMService
+from app.services.llm.factory import get_llm_service
 from app.services.review import ReviewService, ReviewInput
 
 logger = logging.getLogger("api.v1.review")
 
 router = APIRouter(tags=["review"])
+
+
+def get_llm_dependency() -> BaseLLMService:
+    """Return the configured LLM service through a FastAPI-safe dependency."""
+    return get_llm_service()
+
+
+async def get_review_service(
+    github: GitHubService = Depends(GitHubService),
+    llm: BaseLLMService = Depends(get_llm_dependency),
+):
+    """Build the review orchestrator from injectable external services."""
+    try:
+        yield ReviewService(github=github, llm=llm)
+    finally:
+        await _close_if_async(llm)
+        await _close_if_async(github)
+
+
+async def _close_if_async(service: Any) -> None:
+    close = getattr(service, "close", None)
+    if close is None:
+        return
+    result = close()
+    if inspect.isawaitable(result):
+        await result
 
 
 @router.post(
@@ -31,6 +60,7 @@ router = APIRouter(tags=["review"])
 async def review_pr(
     body: ReviewRequest,
     request: Request,
+    service: ReviewService = Depends(get_review_service),
 ) -> Any:
     """Synchronous PR review — one request, one response."""
     request_id = getattr(request.state, "request_id", "unknown")
@@ -41,12 +71,9 @@ async def review_pr(
 
     # ---------- Step 1: Parse URL ----------
     try:
-        parsed = parse_pr_url(pr_url)
+        parse_pr_url(pr_url)
     except InvalidPRUrlError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    # ---------- Step 2-7: Review Service ----------
-    service = ReviewService()
 
     try:
         result = await service.review(ReviewInput(
@@ -91,16 +118,16 @@ async def review_pr(
 async def review_pr_raw(
     body: ReviewRequest,
     request: Request,
+    service: ReviewService = Depends(get_review_service),
 ) -> PlainTextResponse:
     """Same as POST /review but returns raw Markdown."""
     request_id = getattr(request.state, "request_id", "unknown")
 
     try:
-        parsed = parse_pr_url(body.pr_url)
+        parse_pr_url(body.pr_url)
     except InvalidPRUrlError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    service = ReviewService()
     try:
         result = await service.review(ReviewInput(
             pr_url=body.pr_url,

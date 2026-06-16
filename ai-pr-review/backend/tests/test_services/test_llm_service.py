@@ -5,7 +5,7 @@ factory, and prompt builder.
 from __future__ import annotations
 
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from app.core.config import LLMProvider
 from app.services.llm import (
@@ -112,6 +112,16 @@ class TestBuildReviewPrompt(unittest.TestCase):
             diff="diff",
         )
         self.assertIn("No description", user)
+
+    def test_risk_context_is_included(self) -> None:
+        system, user = build_review_prompt(
+            pr_title="Auth change",
+            pr_description="Updates auth middleware",
+            diff="diff",
+            risk_context="[HIGH RISK] Authentication code changed.",
+        )
+        self.assertIn("Risk Context", user)
+        self.assertIn("Authentication code changed", user)
 
     def test_diff_truncation(self) -> None:
         """Very large diffs should be truncated."""

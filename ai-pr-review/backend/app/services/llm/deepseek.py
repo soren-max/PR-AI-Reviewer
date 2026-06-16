@@ -7,8 +7,6 @@ Implements retry with exponential backoff and token tracking.
 from __future__ import annotations
 
 import asyncio
-import json
-import os
 from typing import Optional
 
 import httpx
@@ -87,6 +85,7 @@ class DeepSeekService(BaseLLMService):
         pr_description: str,
         diff: str,
         language: str = "zh",
+        risk_context: str = "",
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
     ) -> LLMReviewResponse:
@@ -101,6 +100,7 @@ class DeepSeekService(BaseLLMService):
             pr_description=pr_description,
             diff=diff,
             language=language,
+            risk_context=risk_context,
         )
 
         try:

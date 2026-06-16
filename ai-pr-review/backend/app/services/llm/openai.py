@@ -87,6 +87,7 @@ class OpenAIService(BaseLLMService):
         pr_description: str,
         diff: str,
         language: str = "zh",
+        risk_context: str = "",
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
     ) -> LLMReviewResponse:
@@ -95,6 +96,7 @@ class OpenAIService(BaseLLMService):
             pr_description=pr_description,
             diff=diff,
             language=language,
+            risk_context=risk_context,
         )
 
         try:

@@ -38,6 +38,19 @@ class ReviewIssue:
     cwe: str = ""
 
 
+_VALID_SEVERITIES = {"critical", "major", "minor", "info"}
+_VALID_CATEGORIES = {
+    "bug",
+    "security",
+    "performance",
+    "design",
+    "style",
+    "best_practice",
+    "readability",
+    "maintainability",
+}
+
+
 @dataclass
 class ReviewReport:
     """Final structured review report.
@@ -93,7 +106,7 @@ class ReviewReport:
             cat = issue.category if issue.category in categories else "maintainability"
             categories[cat].append(issue)
 
-        sev_labels = {"critical": "🔴 Critical", "major": "🟠 Major", "minor": "🟡 Minor", "nit": "⚪ Nit"}
+        sev_labels = {"critical": "🔴 Critical", "major": "🟠 Major", "minor": "🟡 Minor", "info": "⚪ Info"}
 
         for cat_name, cat_issues in categories.items():
             if not cat_issues:
@@ -119,7 +132,7 @@ class ReviewReport:
                 lines.append(f"**Reason**: {issue.reason}")
                 lines.append("")
                 if issue.suggestion:
-                    lines.append(f"**Suggestion**:")
+                    lines.append("**Suggestion**:")
                     lines.append("")
                     lines.append("```python")
                     lines.append(issue.suggestion)
@@ -182,24 +195,48 @@ class ReportGenerator:
             )
 
         # Try to parse as JSON
-        issues = self._try_parse_json(raw_markdown)
-        if issues is not None:
-            report.summary = issues.get("summary", "")
-            report.changed_modules = issues.get("changed_modules", [])
-            for raw_issue in issues.get("issues", []):
+        data = self._try_parse_json(raw_markdown)
+        if data is not None:
+            report.summary = self._extract_summary(data)
+            changed_modules = data.get("changed_modules", [])
+            report.changed_modules = changed_modules if isinstance(changed_modules, list) else []
+            for raw_issue in data.get("issues", []):
                 if isinstance(raw_issue, dict):
                     report.issues.append(ReviewIssue(
-                        severity=raw_issue.get("severity", "minor"),
-                        title=raw_issue.get("title", ""),
-                        file=raw_issue.get("file", ""),
-                        line=raw_issue.get("line", 0) or 0,
-                        category=raw_issue.get("category", "maintainability"),
-                        reason=raw_issue.get("reason", ""),
-                        suggestion=raw_issue.get("suggestion", ""),
-                        cwe=raw_issue.get("cwe", ""),
+                        severity=self._normalize_severity(raw_issue.get("severity", "minor")),
+                        title=str(raw_issue.get("title", "")),
+                        file=str(raw_issue.get("file_path") or raw_issue.get("file") or ""),
+                        line=self._to_int(raw_issue.get("line_start") or raw_issue.get("line")),
+                        category=self._normalize_category(raw_issue.get("category", "maintainability")),
+                        reason=str(raw_issue.get("body") or raw_issue.get("reason") or ""),
+                        suggestion=str(raw_issue.get("suggestion") or ""),
+                        cwe=str(raw_issue.get("cwe") or ""),
                     ))
 
         return report
+
+    def _extract_summary(self, data: dict) -> str:
+        """Extract V2 summary text while tolerating legacy string summaries."""
+        summary = data.get("summary", "")
+        if isinstance(summary, dict):
+            return str(summary.get("overview") or summary.get("text") or "")
+        return str(summary)
+
+    def _normalize_severity(self, value: object) -> str:
+        severity = str(value or "minor").lower()
+        if severity == "nit":
+            return "info"
+        return severity if severity in _VALID_SEVERITIES else "minor"
+
+    def _normalize_category(self, value: object) -> str:
+        category = str(value or "maintainability").lower()
+        return category if category in _VALID_CATEGORIES else "maintainability"
+
+    def _to_int(self, value: object) -> int:
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return 0
 
     def _try_parse_json(self, text: str) -> Optional[dict]:
         """Try to extract JSON from LLM output (handles markdown-wrapped JSON)."""

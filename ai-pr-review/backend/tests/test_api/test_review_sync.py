@@ -3,202 +3,186 @@ Tests for the synchronous ``POST /api/v1/review`` endpoint.
 """
 from __future__ import annotations
 
-import json
-import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import httpx
+import pytest
+from httpx import AsyncClient
 
-from app.core.config import settings
 from app.core.exceptions import InvalidPRUrlError, PRNotFoundError
+from app.main import app
 
 
-# ===========================================================================
-# Test the Pydantic schema
-# ===========================================================================
+@pytest.fixture
+def sample_meta() -> MagicMock:
+    meta = MagicMock()
+    meta.title = "Fix login redirect"
+    meta.description = "Fixes redirect validation after OAuth login."
+    meta.author = "octocat"
+    meta.base_branch = "main"
+    meta.head_branch = "feat/fix"
+    meta.changed_files = 2
+    meta.additions = 50
+    meta.deletions = 10
+    return meta
 
-class TestReviewRequestSchema(unittest.TestCase):
-    """``ReviewRequest`` validation."""
 
-    def setUp(self) -> None:
-        from app.schemas.review_request import ReviewRequest
-        self.schema = ReviewRequest
+@pytest.fixture
+def sample_diff() -> list[MagicMock]:
+    return [
+        MagicMock(
+            filename="src/auth.py",
+            status="modified",
+            additions=30,
+            deletions=5,
+            patch="@@ -1,3 +1,8 @@\n+import os\n+def login():",
+        ),
+    ]
 
+
+@pytest.fixture
+def sample_llm_result() -> MagicMock:
+    result = MagicMock()
+    result.raw_markdown = (
+        '{"overall_score":92,'
+        '"summary":{"overview":"Clean fix for login redirect.",'
+        '"total_issues":0,"critical_count":0,"major_count":0,'
+        '"minor_count":0,"info_count":0},'
+        '"changed_modules":["src/auth.py — updated login redirect"],'
+        '"issues":[]}'
+    )
+    result.summary = "Clean fix for login redirect."
+    result.changed_modules = "- `src/auth.py`"
+    result.potential_risks = ""
+    result.bug_suggestions = "None identified."
+    result.performance_suggestions = ""
+    result.security_suggestions = ""
+    result.input_tokens = 450
+    result.output_tokens = 180
+    result.total_tokens = 630
+    result.model = "deepseek-chat"
+    result.error = None
+    return result
+
+
+def override_review_service(github_mock=None, llm_mock=None) -> None:
+    from app.api.v1.review import get_review_service
+    from app.services.review import ReviewService
+
+    service = ReviewService(github=github_mock, llm=llm_mock)
+    app.dependency_overrides[get_review_service] = lambda: service
+
+
+class TestReviewRequestSchema:
     def test_valid_url(self) -> None:
-        req = self.schema(pr_url="https://github.com/owner/repo/pull/42")
-        self.assertEqual(req.pr_url, "https://github.com/owner/repo/pull/42")
-        self.assertEqual(req.language, "zh")
+        from app.schemas.review_request import ReviewRequest
+
+        req = ReviewRequest(pr_url="https://github.com/owner/repo/pull/42")
+        assert req.pr_url == "https://github.com/owner/repo/pull/42"
+        assert req.language == "zh"
 
     def test_valid_url_trailing_slash(self) -> None:
-        req = self.schema(pr_url="https://github.com/a/b/pull/1/")
-        self.assertEqual(req.pr_url, "https://github.com/a/b/pull/1/")
+        from app.schemas.review_request import ReviewRequest
+
+        req = ReviewRequest(pr_url="https://github.com/a/b/pull/1/")
+        assert req.pr_url == "https://github.com/a/b/pull/1/"
 
     def test_valid_url_with_query(self) -> None:
-        req = self.schema(pr_url="https://github.com/a/b/pull/1?diff=unified")
-        self.assertEqual(req.pr_url, "https://github.com/a/b/pull/1")
+        from app.schemas.review_request import ReviewRequest
+
+        req = ReviewRequest(pr_url="https://github.com/a/b/pull/1?diff=unified")
+        assert req.pr_url == "https://github.com/a/b/pull/1"
 
     def test_valid_language_en(self) -> None:
-        req = self.schema(pr_url="https://github.com/a/b/pull/1", language="en")
-        self.assertEqual(req.language, "en")
+        from app.schemas.review_request import ReviewRequest
+
+        req = ReviewRequest(pr_url="https://github.com/a/b/pull/1", language="en")
+        assert req.language == "en"
 
     def test_invalid_url_raises(self) -> None:
-        with self.assertRaises(InvalidPRUrlError):
-            self.schema(pr_url="not-a-url")
+        from app.schemas.review_request import ReviewRequest
+
+        with pytest.raises(InvalidPRUrlError):
+            ReviewRequest(pr_url="not-a-url")
 
     def test_invalid_language_raises(self) -> None:
-        with self.assertRaises(Exception):
-            self.schema(pr_url="https://github.com/a/b/pull/1", language="fr")
+        from pydantic import ValidationError
+        from app.schemas.review_request import ReviewRequest
+
+        with pytest.raises(ValidationError):
+            ReviewRequest(pr_url="https://github.com/a/b/pull/1", language="fr")
 
 
-class TestReviewResponseSchema(unittest.TestCase):
-    """``ReviewResponse`` construction."""
-
-    def setUp(self) -> None:
-        from app.schemas.review_request import ReviewResponse
-        self.schema = ReviewResponse
-
+class TestReviewResponseSchema:
     def test_basic_response(self) -> None:
-        resp = self.schema(
+        from app.schemas.review_request import ReviewResponse
+
+        resp = ReviewResponse(
             pr_url="https://github.com/a/b/pull/1",
             owner="a",
             repo="b",
             pull_number=1,
             pr_title="Test PR",
-            report="## 📋 PR Summary\n\nTest report.",
+            report="## 📋 Review Summary\n\nTest report.",
         )
-        self.assertEqual(resp.owner, "a")
-        self.assertEqual(resp.pull_number, 1)
-        self.assertIn("PR Summary", resp.report)
-        self.assertEqual(resp.input_tokens, 0)
+        assert resp.owner == "a"
+        assert resp.pull_number == 1
+        assert "Review Summary" in resp.report
+        assert resp.input_tokens == 0
 
 
-# ===========================================================================
-# Integration test with mocked services
-# ===========================================================================
-
-class TestReviewEndpoint(unittest.TestCase):
-    """``POST /api/v1/review`` with mocked GitHub and LLM."""
-
-    def setUp(self) -> None:
-        # FastAPI TestClient
-        from app.main import app
-        from fastapi.testclient import TestClient
-        self.client = TestClient(app)
-
-        # Sample PR metadata
-        self.sample_meta = MagicMock()
-        self.sample_meta.title = "Fix login redirect"
-        self.sample_meta.author = "octocat"
-        self.sample_meta.base_branch = "main"
-        self.sample_meta.head_branch = "feat/fix"
-        self.sample_meta.changed_files = 2
-        self.sample_meta.additions = 50
-        self.sample_meta.deletions = 10
-
-        # Sample file diffs
-        self.sample_diff = [
-            MagicMock(
-                filename="src/auth.py",
-                status="modified",
-                additions=30,
-                deletions=5,
-                patch="@@ -1,3 +1,8 @@\n+import os\n+def login():",
-            ),
-        ]
-
-        # Sample LLM result
-        self.sample_report = (
-            "## 📋 PR Summary\n\n"
-            "Clean fix for login redirect.\n\n"
-            "## 🔧 Changed Modules\n\n"
-            "- `src/auth.py`\n\n"
-            "## 🐛 Bug Suggestions\n\n"
-            "None identified.\n"
-        )
-
-        self.sample_llm_result = MagicMock()
-        self.sample_llm_result.raw_markdown = self.sample_report
-        self.sample_llm_result.summary = "Clean fix for login redirect."
-        self.sample_llm_result.changed_modules = "- `src/auth.py`"
-        self.sample_llm_result.potential_risks = ""
-        self.sample_llm_result.bug_suggestions = "None identified."
-        self.sample_llm_result.performance_suggestions = ""
-        self.sample_llm_result.security_suggestions = ""
-        self.sample_llm_result.input_tokens = 450
-        self.sample_llm_result.output_tokens = 180
-        self.sample_llm_result.total_tokens = 630
-        self.sample_llm_result.model = "deepseek-chat"
-        self.sample_llm_result.error = None
-
-    def _override_deps(
+class TestReviewEndpoint:
+    async def test_review_success(
         self,
-        github_mock=None,
-        llm_mock=None,
+        async_client: AsyncClient,
+        sample_meta: MagicMock,
+        sample_diff: list[MagicMock],
+        sample_llm_result: MagicMock,
     ) -> None:
-        """Override FastAPI dependencies with mocks.
-
-        The override key must match the exact callable passed to ``Depends()``
-        in the route definition — class for ``Depends(GitHubService)``,
-        function for ``Depends(get_llm_service)``.
-        """
-        from app.main import app
-        from app.services.github import GitHubService
-        from app.services.llm.factory import get_llm_service
-
-        if github_mock:
-            app.dependency_overrides[GitHubService] = lambda: github_mock
-        if llm_mock:
-            app.dependency_overrides[get_llm_service] = lambda: llm_mock
-
-    def tearDown(self) -> None:
-        from app.main import app
-        app.dependency_overrides.clear()
-
-    # ------------------------------------------------------------------
-    # Happy path
-    # ------------------------------------------------------------------
-
-    def test_review_success(self) -> None:
-        """A valid PR URL should return a complete review report."""
         github = MagicMock()
-        github.fetch_pr_metadata = AsyncMock(return_value=self.sample_meta)
-        github.fetch_pr_diff = AsyncMock(return_value=self.sample_diff)
+        github.fetch_pr_metadata = AsyncMock(return_value=sample_meta)
+        github.fetch_pr_diff = AsyncMock(return_value=sample_diff)
 
         llm = MagicMock()
-        llm.review_pr = AsyncMock(return_value=self.sample_llm_result)
+        llm.review_pr = AsyncMock(return_value=sample_llm_result)
         llm.close = AsyncMock()
 
-        self._override_deps(github_mock=github, llm_mock=llm)
+        override_review_service(github_mock=github, llm_mock=llm)
 
-        resp = self.client.post(
+        resp = await async_client.post(
             "/api/v1/review",
             json={"pr_url": "https://github.com/octocat/Hello-World/pull/1"},
         )
 
-        self.assertEqual(resp.status_code, 200)
+        assert resp.status_code == 200
         data = resp.json()
-        self.assertEqual(data["owner"], "octocat")
-        self.assertEqual(data["repo"], "Hello-World")
-        self.assertEqual(data["pull_number"], 1)
-        self.assertEqual(data["pr_title"], "Fix login redirect")
-        self.assertIn("PR Summary", data["report"])
-        self.assertEqual(data["input_tokens"], 450)
-        self.assertEqual(data["output_tokens"], 180)
-        self.assertEqual(data["model"], "deepseek-chat")
+        assert data["owner"] == "octocat"
+        assert data["repo"] == "Hello-World"
+        assert data["pull_number"] == 1
+        assert data["pr_title"] == "Fix login redirect"
+        assert "Review Summary" in data["report"]
+        assert "Clean fix for login redirect" in data["report"]
+        assert data["input_tokens"] == 450
+        assert data["output_tokens"] == 180
+        assert data["model"] == "deepseek-chat"
 
-    def test_review_success_with_language_en(self) -> None:
-        """Language parameter should be passed through."""
+    async def test_review_success_with_language_en(
+        self,
+        async_client: AsyncClient,
+        sample_meta: MagicMock,
+        sample_diff: list[MagicMock],
+        sample_llm_result: MagicMock,
+    ) -> None:
         github = MagicMock()
-        github.fetch_pr_metadata = AsyncMock(return_value=self.sample_meta)
-        github.fetch_pr_diff = AsyncMock(return_value=self.sample_diff)
+        github.fetch_pr_metadata = AsyncMock(return_value=sample_meta)
+        github.fetch_pr_diff = AsyncMock(return_value=sample_diff)
 
         llm = MagicMock()
-        llm.review_pr = AsyncMock(return_value=self.sample_llm_result)
+        llm.review_pr = AsyncMock(return_value=sample_llm_result)
         llm.close = AsyncMock()
 
-        self._override_deps(github_mock=github, llm_mock=llm)
+        override_review_service(github_mock=github, llm_mock=llm)
 
-        resp = self.client.post(
+        resp = await async_client.post(
             "/api/v1/review",
             json={
                 "pr_url": "https://github.com/octocat/Hello-World/pull/1",
@@ -206,87 +190,78 @@ class TestReviewEndpoint(unittest.TestCase):
             },
         )
 
-        self.assertEqual(resp.status_code, 200)
-        data = resp.json()
-        self.assertEqual(data["model"], "deepseek-chat")
+        assert resp.status_code == 200
+        assert resp.json()["model"] == "deepseek-chat"
 
-    # ------------------------------------------------------------------
-    # Error paths
-    # ------------------------------------------------------------------
+    async def test_invalid_url_returns_422(self, async_client: AsyncClient) -> None:
+        resp = await async_client.post("/api/v1/review", json={"pr_url": "not-a-url"})
+        assert resp.status_code == 422
+        assert "Invalid" in resp.text
 
-    def test_invalid_url_returns_422(self) -> None:
-        """An invalid PR URL should return 422."""
-        resp = self.client.post(
-            "/api/v1/review",
-            json={"pr_url": "not-a-url"},
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn("Invalid", resp.text)
-
-    def test_pr_not_found_returns_404(self) -> None:
-        """A non-existent PR should return 404."""
+    async def test_pr_not_found_returns_404(self, async_client: AsyncClient) -> None:
         github = MagicMock()
-        github.fetch_pr_metadata = AsyncMock(
-            side_effect=PRNotFoundError("PR not found")
-        )
+        github.fetch_pr_metadata = AsyncMock(side_effect=PRNotFoundError("PR not found"))
 
         llm = MagicMock()
         llm.close = AsyncMock()
 
-        self._override_deps(github_mock=github, llm_mock=llm)
+        override_review_service(github_mock=github, llm_mock=llm)
 
-        resp = self.client.post(
+        resp = await async_client.post(
             "/api/v1/review",
             json={"pr_url": "https://github.com/owner/repo/pull/999"},
         )
-        self.assertEqual(resp.status_code, 404)
+        assert resp.status_code == 404
 
-    def test_github_api_error_returns_502(self) -> None:
-        """A GitHub API failure should return 502."""
+    async def test_github_api_error_returns_502(self, async_client: AsyncClient) -> None:
         from app.core.exceptions import GitHubAPIError
 
         github = MagicMock()
-        github.fetch_pr_metadata = AsyncMock(
-            side_effect=GitHubAPIError("API rate limited")
-        )
+        github.fetch_pr_metadata = AsyncMock(side_effect=GitHubAPIError("API rate limited"))
 
         llm = MagicMock()
         llm.close = AsyncMock()
 
-        self._override_deps(github_mock=github, llm_mock=llm)
+        override_review_service(github_mock=github, llm_mock=llm)
 
-        resp = self.client.post(
+        resp = await async_client.post(
             "/api/v1/review",
             json={"pr_url": "https://github.com/owner/repo/pull/1"},
         )
-        self.assertEqual(resp.status_code, 502)
+        assert resp.status_code == 502
 
-    def test_llm_error_returns_502(self) -> None:
-        """An LLM failure should return 502."""
+    async def test_llm_error_returns_502(
+        self,
+        async_client: AsyncClient,
+        sample_meta: MagicMock,
+        sample_diff: list[MagicMock],
+    ) -> None:
         github = MagicMock()
-        github.fetch_pr_metadata = AsyncMock(return_value=self.sample_meta)
-        github.fetch_pr_diff = AsyncMock(return_value=self.sample_diff)
+        github.fetch_pr_metadata = AsyncMock(return_value=sample_meta)
+        github.fetch_pr_diff = AsyncMock(return_value=sample_diff)
 
         llm = MagicMock()
-        llm.review_pr = AsyncMock(
-            side_effect=Exception("LLM API connection failed")
-        )
+        llm.review_pr = AsyncMock(side_effect=Exception("LLM API connection failed"))
         llm.close = AsyncMock()
 
-        self._override_deps(github_mock=github, llm_mock=llm)
+        override_review_service(github_mock=github, llm_mock=llm)
 
-        resp = self.client.post(
+        resp = await async_client.post(
             "/api/v1/review",
             json={"pr_url": "https://github.com/owner/repo/pull/1"},
         )
-        self.assertEqual(resp.status_code, 502)
-        self.assertIn("LLM", resp.text)
+        assert resp.status_code == 502
+        assert "LLM" in resp.text
 
-    def test_llm_returns_error_field(self) -> None:
-        """If the LLM returns an error in the response, should return 502."""
+    async def test_llm_returns_error_field(
+        self,
+        async_client: AsyncClient,
+        sample_meta: MagicMock,
+        sample_diff: list[MagicMock],
+    ) -> None:
         github = MagicMock()
-        github.fetch_pr_metadata = AsyncMock(return_value=self.sample_meta)
-        github.fetch_pr_diff = AsyncMock(return_value=self.sample_diff)
+        github.fetch_pr_metadata = AsyncMock(return_value=sample_meta)
+        github.fetch_pr_diff = AsyncMock(return_value=sample_diff)
 
         error_result = MagicMock()
         error_result.raw_markdown = ""
@@ -301,40 +276,38 @@ class TestReviewEndpoint(unittest.TestCase):
         llm.review_pr = AsyncMock(return_value=error_result)
         llm.close = AsyncMock()
 
-        self._override_deps(github_mock=github, llm_mock=llm)
+        override_review_service(github_mock=github, llm_mock=llm)
 
-        resp = self.client.post(
+        resp = await async_client.post(
             "/api/v1/review",
             json={"pr_url": "https://github.com/owner/repo/pull/1"},
         )
-        self.assertEqual(resp.status_code, 502)
-        self.assertIn("API key", resp.text)
+        assert resp.status_code == 502
+        assert "API key" in resp.text
 
-    # ------------------------------------------------------------------
-    # Raw Markdown endpoint
-    # ------------------------------------------------------------------
-
-    def test_review_raw_returns_markdown(self) -> None:
-        """``POST /review/raw`` should return raw Markdown."""
+    async def test_review_raw_returns_markdown(
+        self,
+        async_client: AsyncClient,
+        sample_meta: MagicMock,
+        sample_diff: list[MagicMock],
+        sample_llm_result: MagicMock,
+    ) -> None:
         github = MagicMock()
-        github.fetch_pr_metadata = AsyncMock(return_value=self.sample_meta)
-        github.fetch_pr_diff = AsyncMock(return_value=self.sample_diff)
+        github.fetch_pr_metadata = AsyncMock(return_value=sample_meta)
+        github.fetch_pr_diff = AsyncMock(return_value=sample_diff)
 
         llm = MagicMock()
-        llm.review_pr = AsyncMock(return_value=self.sample_llm_result)
+        llm.review_pr = AsyncMock(return_value=sample_llm_result)
         llm.close = AsyncMock()
 
-        self._override_deps(github_mock=github, llm_mock=llm)
+        override_review_service(github_mock=github, llm_mock=llm)
 
-        resp = self.client.post(
+        resp = await async_client.post(
             "/api/v1/review/raw",
             json={"pr_url": "https://github.com/octocat/Hello-World/pull/1"},
         )
 
-        self.assertEqual(resp.status_code, 200)
-        self.assertIn("PR Summary", resp.text)
-        self.assertIn("text/markdown", resp.headers.get("content-type", ""))
-
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+        assert resp.status_code == 200
+        assert "Review Summary" in resp.text
+        assert "Clean fix for login redirect" in resp.text
+        assert "text/markdown" in resp.headers.get("content-type", "")

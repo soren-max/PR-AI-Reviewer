@@ -72,6 +72,12 @@ SYSTEM_PROMPT_EN = """You are a Staff Software Engineer conducting a Code Review
 4. Do NOT invent issues for clean/safe code
 5. Output **pure JSON** only, no markdown wrapping
 
+## Severity Levels
+- **critical**: production incident, security vulnerability, or data loss
+- **major**: clear correctness issue that may cause runtime bugs
+- **minor**: low-risk maintainability, readability, or style issue
+- **info**: optional suggestion for future improvement
+
 ## Output Format
 (Same as Chinese version — JSON structure identical)
 ```json
@@ -143,14 +149,28 @@ def build_user_prompt(
             truncated = True
             break
 
+        remaining_budget = settings.MAX_DIFF_SIZE_BYTES - total_diff_size
+        if remaining_budget <= 0:
+            lines.append(f"### {diff.filename} (omitted — diff size budget exceeded)")
+            lines.append("")
+            truncated = True
+            break
+
+        patch = diff.patch
+        if len(patch) > remaining_budget:
+            patch = patch[:remaining_budget] + "\n... [diff truncated]"
+            truncated = True
+
         lines.append(f"### {diff.filename} (+{diff.additions} -{diff.deletions})")
         lines.append("")
         lines.append("```diff")
-        lines.append(diff.patch)
+        lines.append(patch)
         lines.append("```")
         lines.append("")
 
-        total_diff_size += len(diff.patch)
+        total_diff_size += len(patch)
+        if truncated:
+            break
 
     if truncated:
         lines.append("> ⚠️ Some files were omitted due to the large diff size.\n")

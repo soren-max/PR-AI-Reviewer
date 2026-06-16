@@ -1,48 +1,65 @@
 ---
 name: Bug Report
-about: Report a reproducible bug to help us improve
-title: '[BUG] '
+about: Report a reproducible defect
+title: '[Bug] '
 labels: bug
 assignees: ''
 ---
 
-## Bug Description
+## Summary
 
-<!-- A clear and concise description of what the bug is. -->
+<!-- Clear one-paragraph description of the bug. -->
+
+## Impact
+
+<!-- Who is affected? What breaks? Is this P0/P1/P2? -->
 
 ## Steps to Reproduce
 
-1. Run command: `...`
-2. Input: `...`
-3. See error:
-
-```
-paste error output here
-```
+1. 
+2. 
+3. 
 
 ## Expected Behavior
 
-<!-- What should have happened instead? -->
+<!-- What should happen? -->
 
 ## Actual Behavior
 
-<!-- What actually happened? Include full stack trace if available. -->
+<!-- What actually happens? Include logs or screenshots if useful. -->
 
 ## Environment
 
-- **OS**: <!-- e.g. macOS 14.3, Ubuntu 22.04 -->
-- **Python version**: <!-- e.g. 3.12.1 -->
-- **Package version**: <!-- commit SHA or tag, e.g. v0.1.0 -->
-- **OpenAI model**: <!-- e.g. gpt-4-turbo-preview -->
+- OS:
+- Browser:
+- Python:
+- Node:
+- Commit SHA:
+- Backend or frontend:
 
-## Minimal Reproduction
+## Suspected Area
 
-<!-- If possible, provide a minimal code snippet that reproduces the issue. -->
+<!-- API, GitHub integration, LLM provider, prompt, frontend, CI, docs, unknown. -->
 
-```python
+## Acceptance Criteria
 
+- [ ] Bug is reproduced or explained.
+- [ ] Fix is implemented.
+- [ ] Regression test is added or updated.
+- [ ] Relevant checks pass.
+
+## Suggested Branch
+
+```text
+fix/<short-name>
+```
+
+## Suggested PR Title
+
+```text
+fix(scope): short description
 ```
 
 ## Additional Context
 
-<!-- Logs, screenshots, or any other information that may help diagnose. -->
+<!-- Links, logs, screenshots, affected PR URL, or related issues. -->

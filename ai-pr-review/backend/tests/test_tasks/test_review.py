@@ -29,8 +29,16 @@ async def test_run_review_success(test_engine, mock_github_service, mock_llm_cli
         await db.commit()
         review_id = str(review.id)
 
-    with patch("app.tasks.review.GitHubService", return_value=mock_github_service):
-        with patch("app.tasks.review.LLMClient", return_value=mock_llm_client):
+    github_cm = MagicMock()
+    github_cm.__aenter__ = AsyncMock(return_value=mock_github_service)
+    github_cm.__aexit__ = AsyncMock(return_value=None)
+
+    llm_cm = MagicMock()
+    llm_cm.__aenter__ = AsyncMock(return_value=mock_llm_client)
+    llm_cm.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("app.tasks.review.GitHubService", return_value=github_cm):
+        with patch("app.tasks.review.LLMClient", return_value=llm_cm):
             await run_review(review_id, test_engine)
 
     # Verify the review is now completed

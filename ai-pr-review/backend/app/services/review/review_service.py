@@ -22,11 +22,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.services.github import GitHubService
+from app.services.llm.base import BaseLLMService
 from app.services.llm.factory import get_llm_service
-from app.services.review.diff_parser import parse_diff, DiffResult
+from app.services.review.diff_parser import parse_diff
 from app.services.review.risk_analyzer import assess_risk, RiskResult, build_risk_prompt_context
-from app.services.review.prompt_builder import build_review_prompt
-from app.services.review.report_generator import ReportGenerator
+from app.services.review.report_generator import ReportGenerator, ReviewReport
 
 logger = logging.getLogger("services.review")
 
@@ -46,7 +46,7 @@ class ReviewOutput:
     owner: str
     repo: str
     pull_number: int
-    report: str
+    report: ReviewReport
     risk: RiskResult
     diff_summary: str
     input_tokens: int = 0
@@ -72,9 +72,11 @@ class ReviewService:
     def __init__(
         self,
         github: Optional[GitHubService] = None,
+        llm: Optional[BaseLLMService] = None,
         llm_provider: Optional[str] = None,
     ):
         self.github = github or GitHubService()
+        self.llm = llm
         self.llm_provider = llm_provider
 
     async def review(self, inp: ReviewInput) -> ReviewOutput:
@@ -111,27 +113,22 @@ class ReviewService:
         changed_paths = [f.new_path for f in diff_result.files]
         risk = assess_risk(changed_paths)
 
-        # ---------- Step 5: Build prompt ----------
+        # ---------- Step 5: Build deterministic risk context ----------
         risk_context = build_risk_prompt_context(risk)
-        system_prompt, user_prompt = build_review_prompt(
-            pr_title=pr_meta.title,
-            pr_description=pr_meta.title,
-            diff=diff_text,
-            language=inp.language,
-            risk_context=risk_context,
-        )
 
         # ---------- Step 6: Call LLM ----------
-        llm = get_llm_service()
+        llm = self.llm or get_llm_service()
         try:
             llm_result = await llm.review_pr(
                 pr_title=pr_meta.title,
-                pr_description=pr_meta.title,
+                pr_description=pr_meta.description,
                 diff=diff_text,
                 language=inp.language,
+                risk_context=risk_context,
             )
         finally:
-            await llm.close()
+            if self.llm is None:
+                await llm.close()
 
         # ---------- Step 7: Generate report ----------
         generator = ReportGenerator()
@@ -145,7 +142,7 @@ class ReviewService:
 
         return ReviewOutput(
             pr_title=pr_meta.title,
-            pr_description=pr_meta.title,
+            pr_description=pr_meta.description,
             owner=parsed.owner,
             repo=parsed.repo,
             pull_number=parsed.pr_number,
@@ -162,7 +159,6 @@ class ReviewService:
 
 def summarize_diff_result(diff_result) -> str:
     """Build a short summary string from a DiffResult."""
-    total = diff_result.total_additions + diff_result.total_deletions
     return (
         f"{diff_result.total_files_changed} files changed, "
         f"{diff_result.total_additions} insertions(+), "

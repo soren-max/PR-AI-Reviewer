@@ -1,7 +1,6 @@
 """
 Shared test fixtures.
 """
-import asyncio
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -10,22 +9,16 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.database import async_session_factory, engine, init_db
+from app.core.config import settings
 from app.main import app
 from app.models.base import Base
+
+settings.DEEPSEEK_API_KEY = settings.DEEPSEEK_API_KEY or "sk-test"
 
 # ---------------------------------------------------------------------------
 # In-memory SQLite for tests
 # ---------------------------------------------------------------------------
 TEST_DATABASE_URL = "sqlite+aiosqlite://"
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create a session-scoped event loop."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -51,6 +44,10 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture
 async def async_client(test_engine) -> AsyncGenerator[AsyncClient, None]:
     """Provide an async HTTP client against the FastAPI app with overridden DB."""
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
     async def override_get_db():
         session_factory = async_sessionmaker(
             bind=test_engine, class_=AsyncSession, expire_on_commit=False
