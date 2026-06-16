@@ -44,10 +44,13 @@ PR URL
 → RiskDetectionNode
 → ReviewGenerationNode
 → ReportGenerationNode
+→ ReviewMetrics
 → existing ReviewResponse
 ```
 
 `ReviewService` remains the compatibility facade used by the API layer. It delegates orchestration to `WorkflowService`, which compiles the LangGraph state graph and maps `ReviewState` back to the existing response model.
+
+The synchronous response includes an additive `metrics` object with review time, workflow latency, GitHub API latency, LLM latency, prompt length, token usage, risk score, and per-node latency. These values are collected inside workflow state so future Harness and evaluation jobs can reuse the same observability payload without calling frontend-specific code.
 
 On failure at any step:
    status → failed, error_code + error_detail set

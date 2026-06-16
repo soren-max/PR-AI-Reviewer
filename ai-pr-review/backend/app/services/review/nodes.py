@@ -12,6 +12,7 @@ from app.core.exceptions import InvalidPRUrlError, PRNotFoundError
 from app.services.github import GitHubService, parse_pr_url
 from app.services.llm.base import BaseLLMService
 from app.services.llm.factory import get_llm_service
+from app.services.llm.prompts import build_review_prompt
 from app.services.review.diff_parser import parse_diff
 from app.services.review.report_generator import ReportGenerator
 from app.services.review.risk_analyzer import assess_risk, build_risk_prompt_context
@@ -76,6 +77,7 @@ class FetchPRNode(WorkflowNode):
         repo = state["repo"]
         pull_number = state["pull_number"]
 
+        github_started = time.monotonic()
         pr_info = await _retry(
             lambda: self.github.fetch_pr_metadata(owner, repo, pull_number),
             max_attempts=self.max_attempts,
@@ -88,6 +90,10 @@ class FetchPRNode(WorkflowNode):
             "pr_info": pr_info,
             "changed_files": changed_files,
             "diff_text": build_diff_text(changed_files),
+            "metrics": _merge_metrics(
+                state,
+                {"github_api_latency_ms": int((time.monotonic() - github_started) * 1000)},
+            ),
         }
 
 
@@ -107,7 +113,17 @@ class RiskDetectionNode(WorkflowNode):
 
     async def run(self, state: ReviewState) -> ReviewState:
         diff_analysis = state["diff_analysis"]
-        return {"risk_analysis": assess_risk(diff_analysis.changed_paths)}
+        risk = assess_risk(diff_analysis.changed_paths)
+        return {
+            "risk_analysis": risk,
+            "metrics": _merge_metrics(
+                state,
+                {
+                    "risk_score": risk.score,
+                    "risk_level": risk.risk_level.value,
+                },
+            ),
+        }
 
 
 class ReviewGenerationNode(WorkflowNode):
@@ -128,8 +144,16 @@ class ReviewGenerationNode(WorkflowNode):
         should_close = self.llm is None
         pr_info = state["pr_info"]
         risk_context = build_risk_prompt_context(state["risk_analysis"])
+        system_prompt, user_prompt = build_review_prompt(
+            pr_title=pr_info.title,
+            pr_description=pr_info.description,
+            diff=state.get("diff_text", ""),
+            language=state.get("language", "zh"),
+            risk_context=risk_context,
+        )
 
         try:
+            llm_started = time.monotonic()
             result = await _retry(
                 lambda: llm.review_pr(
                     pr_title=pr_info.title,
@@ -140,6 +164,7 @@ class ReviewGenerationNode(WorkflowNode):
                 ),
                 max_attempts=self.max_attempts,
             )
+            llm_latency_ms = int((time.monotonic() - llm_started) * 1000)
         finally:
             if should_close:
                 await llm.close()
@@ -151,6 +176,13 @@ class ReviewGenerationNode(WorkflowNode):
                 "output_tokens": result.output_tokens,
                 "total_tokens": result.input_tokens + result.output_tokens,
             },
+            "metrics": _merge_metrics(
+                state,
+                {
+                    "llm_latency_ms": llm_latency_ms,
+                    "prompt_length_chars": len(system_prompt) + len(user_prompt),
+                },
+            ),
         }
 
 
@@ -229,3 +261,9 @@ def _with_latency(
     latency = dict(current.get("latency", {}))
     latency[node_name] = int((time.monotonic() - start) * 1000)
     return {**updates, "latency": latency}
+
+
+def _merge_metrics(state: ReviewState, updates: dict[str, Any]) -> dict[str, Any]:
+    metrics = dict(state.get("metrics", {}))
+    metrics.update(updates)
+    return metrics

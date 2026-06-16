@@ -10,6 +10,7 @@ Submit a GitHub PR URL and get an automated, structured code review powered by D
 - 🔍 **Automatic diff extraction** — fetches PR metadata and unified diffs via GitHub API
 - 🤖 **LLM-powered analysis** — DeepSeek V4 Pro evaluates code quality, security, performance, and best practices
 - 🧭 **LangGraph workflow** — stateful review orchestration with retries, conditional error recovery, and future checkpoint extension
+- 📈 **Review observability** — exposes review time, GitHub/LLM latency, prompt/token usage, and risk metrics
 - 📊 **Structured report** — score gauge, severity-categorized issues, code suggestions, file tree navigation
 - ⚡ **Async processing** — non-blocking; poll status while review runs in background
 - 📜 **History** — review records persisted for future reference
@@ -26,7 +27,7 @@ ai-pr-review/
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the full architecture design.
-The synchronous review path is now orchestrated by LangGraph while preserving the existing API response contract.
+The synchronous review path is now orchestrated by LangGraph while preserving the existing API response contract. Completed synchronous reviews also include an additive `metrics` object for review time, workflow latency, token usage, prompt length, and risk score.
 
 ## Quick Start
 

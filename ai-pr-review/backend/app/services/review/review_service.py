@@ -21,6 +21,7 @@ from typing import Optional
 
 from app.services.github import GitHubService
 from app.services.llm.base import BaseLLMService
+from app.services.review.metrics import ReviewMetrics, build_review_metrics
 from app.services.review.risk_analyzer import RiskResult
 from app.services.review.report_generator import ReviewReport
 from app.services.review.workflow_service import WorkflowService
@@ -49,6 +50,7 @@ class ReviewOutput:
     model: str = ""
     error: Optional[str] = None
     duration_ms: int = 0
+    metrics: ReviewMetrics | None = None
 
 
 class ReviewService:
@@ -82,6 +84,7 @@ class ReviewService:
         risk = state["risk_analysis"]
         diff_result = state["diff_analysis"]
         report = state["final_report"]
+        metrics = build_review_metrics(state)
 
         return ReviewOutput(
             pr_title=pr_meta.title,
@@ -96,7 +99,8 @@ class ReviewService:
             output_tokens=llm_result.output_tokens,
             model=llm_result.model,
             error=llm_result.error,
-            duration_ms=state.get("latency", {}).get("total", 0),
+            duration_ms=metrics.review_time_ms,
+            metrics=metrics,
         )
 
 

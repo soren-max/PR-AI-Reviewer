@@ -51,6 +51,22 @@ class ReviewRequest(BaseModel):
         return base
 
 
+class ReviewMetricsResponse(BaseModel):
+    """Observability metrics for a completed review."""
+
+    review_time_ms: int = 0
+    workflow_latency_ms: int = 0
+    github_api_latency_ms: int = 0
+    llm_latency_ms: int = 0
+    prompt_length_chars: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    risk_score: int = 0
+    risk_level: str = "low"
+    node_latency_ms: dict[str, int] = Field(default_factory=dict)
+
+
 class ReviewResponse(BaseModel):
     """Response from a synchronous PR review.
 
@@ -64,6 +80,7 @@ class ReviewResponse(BaseModel):
         input_tokens: Number of prompt tokens consumed.
         output_tokens: Number of completion tokens generated.
         model: LLM model used for the review.
+        metrics: Observability metrics collected by the workflow.
     """
 
     pr_url: str
@@ -75,3 +92,4 @@ class ReviewResponse(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     model: str = ""
+    metrics: ReviewMetricsResponse = Field(default_factory=ReviewMetricsResponse)
