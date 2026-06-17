@@ -47,6 +47,20 @@ Repository Root
   modules/functions/classes/imports
 ```
 
+Separate context retrieval boundary:
+
+```
+Changed File + Repository Root
+  │
+  ▼
+┌──────────────────────┐
+│ ContextRetriever      │  Tree-sitter + Code Symbol Index
+└──────────┬───────────┘
+           ▼
+  Context Package
+  functions/classes/imports/files/README/Architecture
+```
+
 ## Data Flow
 
 ```
@@ -93,6 +107,7 @@ On failure at any step:
 - **LangGraph for review orchestration**: The synchronous review pipeline now uses explicit state and single-purpose nodes so future multi-agent review, checkpointing, and conditional branches can be added without changing the API contract.
 - **Tree-sitter parser boundary**: `ParserFactory` and `TreeSitterService` provide standalone AST parsing. Sprint4 PR1 enables Python only and reserves Java, Go, and TypeScript extension points without changing the review workflow.
 - **Code Symbol Index boundary**: `CodeSymbolIndexService` scans Python files into a deterministic JSON index for modules, functions, classes, and imports. It exposes a LangGraph-compatible state update without wiring into Context Retrieval, prompt construction, vector search, or the review workflow.
+- **Context Retrieval boundary**: `ContextRetriever` builds changed-file Context Packages from Tree-sitter parsing plus Code Symbol Index data for Review Agent callers. It does not use embeddings, FAISS, vector search, or direct workflow wiring.
 
 ## Directory Responsibilities
 
@@ -104,7 +119,7 @@ On failure at any step:
 | `app/core/` | Cross-cutting concerns: configuration, database engine, exception hierarchy, logging |
 | `app/models/` | SQLAlchemy ORM models: table definitions, relationships, query helpers |
 | `app/schemas/` | Pydantic schemas: API request validation, response serialization, OpenAPI generation |
-| `app/services/` | Business logic: GitHub client, LLM client, LangGraph workflow, prompt builder, report parser, Tree-sitter parser service, symbol index service |
+| `app/services/` | Business logic: GitHub client, LLM client, LangGraph workflow, prompt builder, report parser, Tree-sitter parser service, symbol index service, context retrieval service |
 | `app/tasks/` | Async workflow orchestration: the `run_review` pipeline |
 | `tests/` | pytest test suite, mirrors app structure |
 

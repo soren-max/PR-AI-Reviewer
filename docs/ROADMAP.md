@@ -81,7 +81,7 @@ Each stage must be complete before the next begins.
 | Symbol table builder (Code Symbol Index foundation) | ✅ Complete |
 | Call graph construction | 📅 Planned |
 | Import graph construction | 📅 Planned |
-| Context formatter → Prompt integration | 📅 Planned |
+| Context formatter → Prompt integration (Context Package foundation) | ✅ Complete |
 | TypeScript/JS tree-sitter parser | 📅 Planned |
 
 ---

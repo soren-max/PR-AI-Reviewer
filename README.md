@@ -65,6 +65,7 @@ This is a **real engineering product**, not a demo. Every milestone preserves te
 | 📈 **Review Observability** | Review time, workflow latency, GitHub/LLM latency, prompt/token usage, and risk metrics | ✅ Done |
 | 🌳 **Tree-sitter Parser** | Python AST output via ParserFactory and TreeSitterService | ✅ Done |
 | 🧩 **Code Symbol Index** | Repository-wide JSON index for Python modules, functions, classes, and imports | ✅ Done |
+| 📦 **Context Retrieval Engine** | Changed-file Context Package for Review Agent use, without embeddings or FAISS | ✅ Done |
 | 🚀 **FastAPI Backend** | `POST /api/v1/review` synchronous review endpoint | ✅ Done |
 | 🖥️ **Next.js Frontend** | PR URL input → report rendering | ✅ Done |
 | 🔄 **Multi-LLM** | DeepSeek / OpenAI / Qwen via config switch | ✅ Done |
@@ -143,6 +144,7 @@ PR URL
 | **Diff Parsing** | regex + AST (Python ast module) |
 | **AST Parsing** | Tree-sitter Python grammar, with Java/Go/TypeScript extension points reserved |
 | **Symbol Indexing** | Repository scan → JSON module/function/class/import index |
+| **Context Retrieval** | Tree-sitter + Code Symbol Index changed-file context packages |
 | **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
 | **Database** | SQLite (MVP) → PostgreSQL (production) |
 | **Testing** | pytest / unittest, root suite 177 tests + backend suite 103 tests |
@@ -298,6 +300,26 @@ assert "symbol_index" in update
 assert index["summary"]["module_count"] >= 0
 ```
 
+### Context Retrieval Engine
+
+Sprint4 PR3 adds `ContextRetriever` under `ai-pr-review/backend/app/services/context_retrieval/`.
+It accepts a changed Python file and returns a JSON-ready Context Package containing related functions, classes, imports, files, README context, and Architecture context.
+It uses Tree-sitter and the Code Symbol Index; it does not use embeddings, FAISS, vector search, or prompt-side retrieval logic.
+
+```python
+from app.services.context_retrieval import ContextRetriever
+
+retriever = ContextRetriever()
+context_package = retriever.retrieve("/path/to/repo", "pkg/changed.py")
+update = retriever.build_state_update({
+    "repository_root": "/path/to/repo",
+    "changed_file": "pkg/changed.py",
+})
+
+assert "context_package" in update
+assert context_package["changed_file"] == "pkg/changed.py"
+```
+
 ---
 
 ## 🔧 Development Workflow
@@ -361,7 +383,7 @@ python -m pytest tests/test_parser.py -v
 python -m pytest tests/ --cov-fail-under=80
 ```
 
-**Current verification baseline**: root suite 177 tests with 85%+ coverage, plus backend suite 103 tests across API, workflow, metrics, GitHub, LLM, report, parser, symbol index, and task paths.
+**Current verification baseline**: root suite 177 tests with 85%+ coverage, plus backend suite 110 tests across API, workflow, metrics, GitHub, LLM, report, parser, symbol index, context retrieval, and task paths.
 
 ---
 
@@ -392,7 +414,8 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 | Observability | ✅ Review workflow metrics surfaced in API and frontend |
 | Tree-sitter parser foundation | ✅ Python AST service, Java/Go/TypeScript interfaces reserved |
 | Code Symbol Index | ✅ Python module/function/class/import JSON index |
-| Test coverage | ✅ Root suite 177 tests, backend suite 103 tests, ≥80% |
+| Context Retrieval Engine | ✅ Changed-file Context Package without embeddings or FAISS |
+| Test coverage | ✅ Root suite 177 tests, backend suite 110 tests, ≥80% |
 | CI/CD | ✅ GitHub Actions |
 | Enterprise docs | ✅ PRD / Roadmap / Acceptance / Workflow |
 | Context Retrieval | 📅 Stage 4 |
