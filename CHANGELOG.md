@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added Tree-sitter parser foundation with `ParserFactory`, `TreeSitterService`, Python AST output, and reserved Java/Go/TypeScript extension points.
+- Added Tree-sitter parser pytest coverage for Python parsing, syntax error ASTs, reserved languages, and unsupported languages.
 - Added Sprint 3 Review and Retrospective documentation for final acceptance, Definition of Done, technical debt, and Sprint 4 readiness.
 - Added review workflow observability metrics for review time, workflow latency, GitHub API latency, LLM latency, prompt length, token usage, risk score, and node latency.
 - Added frontend metrics display for Review Time, Prompt Tokens, Completion Tokens, and Risk Score.

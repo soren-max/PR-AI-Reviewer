@@ -77,7 +77,7 @@ Each stage must be complete before the next begins.
 
 | Deliverable | Status |
 |---|---|
-| Python AST parser | 📅 Planned |
+| Python AST parser (Tree-sitter foundation only) | ✅ Complete |
 | Symbol table builder | 📅 Planned |
 | Call graph construction | 📅 Planned |
 | Import graph construction | 📅 Planned |

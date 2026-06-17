@@ -10,3 +10,5 @@ aiosqlite>=0.20.0,<1.0.0
 httpx>=0.28.0,<1.0.0
 langgraph>=0.2.0,<1.0.0
 alembic>=1.14.0,<2.0.0
+tree-sitter>=0.25.0,<1.0.0
+tree-sitter-python>=0.25.0,<1.0.0
