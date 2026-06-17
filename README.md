@@ -64,6 +64,7 @@ This is a **real engineering product**, not a demo. Every milestone preserves te
 | 🧭 **LangGraph Workflow** | Stateful Agent Workflow orchestration with retry and error recovery | ✅ Done |
 | 📈 **Review Observability** | Review time, workflow latency, GitHub/LLM latency, prompt/token usage, and risk metrics | ✅ Done |
 | 🌳 **Tree-sitter Parser** | Python AST output via ParserFactory and TreeSitterService | ✅ Done |
+| 🧩 **Code Symbol Index** | Repository-wide JSON index for Python modules, functions, classes, and imports | ✅ Done |
 | 🚀 **FastAPI Backend** | `POST /api/v1/review` synchronous review endpoint | ✅ Done |
 | 🖥️ **Next.js Frontend** | PR URL input → report rendering | ✅ Done |
 | 🔄 **Multi-LLM** | DeepSeek / OpenAI / Qwen via config switch | ✅ Done |
@@ -141,9 +142,10 @@ PR URL
 | **GitHub API** | requests (sync), httpx (async) |
 | **Diff Parsing** | regex + AST (Python ast module) |
 | **AST Parsing** | Tree-sitter Python grammar, with Java/Go/TypeScript extension points reserved |
+| **Symbol Indexing** | Repository scan → JSON module/function/class/import index |
 | **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
 | **Database** | SQLite (MVP) → PostgreSQL (production) |
-| **Testing** | pytest / unittest, root suite 177 tests + backend suite 96 tests |
+| **Testing** | pytest / unittest, root suite 177 tests + backend suite 103 tests |
 | **CI/CD** | GitHub Actions (lint → test → summary) |
 | **Code Quality** | ruff, flake8, mypy (strict) |
 | **Container** | Docker + Docker Compose |
@@ -279,6 +281,23 @@ assert result["language"] == "python"
 assert result["ast"]["type"] == "module"
 ```
 
+### Code Symbol Index
+
+Sprint4 PR2 adds a standalone repository scanner under `ai-pr-review/backend/app/services/symbol_index/`.
+It scans Python files and produces a deterministic JSON-ready index for modules, functions, classes, and imports.
+The service exposes a LangGraph-compatible additive state update but is not wired into the review workflow and does not perform Context Retrieval or FAISS indexing.
+
+```python
+from app.services.symbol_index import CodeSymbolIndexService
+
+service = CodeSymbolIndexService()
+index = service.build_index("/path/to/repo")
+update = service.build_state_update({"repository_root": "/path/to/repo"})
+
+assert "symbol_index" in update
+assert index["summary"]["module_count"] >= 0
+```
+
 ---
 
 ## 🔧 Development Workflow
@@ -342,7 +361,7 @@ python -m pytest tests/test_parser.py -v
 python -m pytest tests/ --cov-fail-under=80
 ```
 
-**Current verification baseline**: root suite 177 tests with 85%+ coverage, plus backend suite 96 tests across API, workflow, metrics, GitHub, LLM, report, parser, and task paths.
+**Current verification baseline**: root suite 177 tests with 85%+ coverage, plus backend suite 103 tests across API, workflow, metrics, GitHub, LLM, report, parser, symbol index, and task paths.
 
 ---
 
@@ -372,7 +391,8 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 | LLM providers | ✅ DeepSeek / OpenAI / Qwen |
 | Observability | ✅ Review workflow metrics surfaced in API and frontend |
 | Tree-sitter parser foundation | ✅ Python AST service, Java/Go/TypeScript interfaces reserved |
-| Test coverage | ✅ Root suite 177 tests, backend suite 96 tests, ≥80% |
+| Code Symbol Index | ✅ Python module/function/class/import JSON index |
+| Test coverage | ✅ Root suite 177 tests, backend suite 103 tests, ≥80% |
 | CI/CD | ✅ GitHub Actions |
 | Enterprise docs | ✅ PRD / Roadmap / Acceptance / Workflow |
 | Context Retrieval | 📅 Stage 4 |
