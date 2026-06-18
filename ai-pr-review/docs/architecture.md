@@ -33,6 +33,20 @@ Source Code
   Serializable AST
 ```
 
+Separate symbol index boundary:
+
+```
+Repository Root
+  │
+  ▼
+┌──────────────────────┐
+│ CodeSymbolIndexService│  Python files
+└──────────┬───────────┘
+           ▼
+  JSON Symbol Index
+  modules/functions/classes/imports
+```
+
 ## Data Flow
 
 ```
@@ -78,6 +92,7 @@ On failure at any step:
 - **Polling not WebSocket**: MVP simplicity. Future: SSE or WebSocket for real-time updates.
 - **LangGraph for review orchestration**: The synchronous review pipeline now uses explicit state and single-purpose nodes so future multi-agent review, checkpointing, and conditional branches can be added without changing the API contract.
 - **Tree-sitter parser boundary**: `ParserFactory` and `TreeSitterService` provide standalone AST parsing. Sprint4 PR1 enables Python only and reserves Java, Go, and TypeScript extension points without changing the review workflow.
+- **Code Symbol Index boundary**: `CodeSymbolIndexService` scans Python files into a deterministic JSON index for modules, functions, classes, and imports. It exposes a LangGraph-compatible state update without wiring into Context Retrieval, prompt construction, vector search, or the review workflow.
 
 ## Directory Responsibilities
 
@@ -89,7 +104,7 @@ On failure at any step:
 | `app/core/` | Cross-cutting concerns: configuration, database engine, exception hierarchy, logging |
 | `app/models/` | SQLAlchemy ORM models: table definitions, relationships, query helpers |
 | `app/schemas/` | Pydantic schemas: API request validation, response serialization, OpenAPI generation |
-| `app/services/` | Business logic: GitHub client, LLM client, LangGraph workflow, prompt builder, report parser, Tree-sitter parser service |
+| `app/services/` | Business logic: GitHub client, LLM client, LangGraph workflow, prompt builder, report parser, Tree-sitter parser service, symbol index service |
 | `app/tasks/` | Async workflow orchestration: the `run_review` pipeline |
 | `tests/` | pytest test suite, mirrors app structure |
 
