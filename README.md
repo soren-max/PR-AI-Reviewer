@@ -63,6 +63,7 @@ This is a **real engineering product**, not a demo. Every milestone preserves te
 | 📊 **Structured Report** | JSON → Markdown report with severity-categorized issues | ✅ Done |
 | 🧭 **LangGraph Workflow** | Stateful Agent Workflow orchestration with retry and error recovery | ✅ Done |
 | 📈 **Review Observability** | Review time, workflow latency, GitHub/LLM latency, prompt/token usage, and risk metrics | ✅ Done |
+| 🌳 **Tree-sitter Parser** | Python AST output via ParserFactory and TreeSitterService | ✅ Done |
 | 🚀 **FastAPI Backend** | `POST /api/v1/review` synchronous review endpoint | ✅ Done |
 | 🖥️ **Next.js Frontend** | PR URL input → report rendering | ✅ Done |
 | 🔄 **Multi-LLM** | DeepSeek / OpenAI / Qwen via config switch | ✅ Done |
@@ -139,9 +140,10 @@ PR URL
 | **LLM** | DeepSeek V4 Pro / OpenAI GPT-4 / Qwen Max |
 | **GitHub API** | requests (sync), httpx (async) |
 | **Diff Parsing** | regex + AST (Python ast module) |
+| **AST Parsing** | Tree-sitter Python grammar, with Java/Go/TypeScript extension points reserved |
 | **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS |
 | **Database** | SQLite (MVP) → PostgreSQL (production) |
-| **Testing** | pytest / unittest, root suite 177 tests + backend suite 89 tests |
+| **Testing** | pytest / unittest, root suite 177 tests + backend suite 96 tests |
 | **CI/CD** | GitHub Actions (lint → test → summary) |
 | **Code Quality** | ruff, flake8, mypy (strict) |
 | **Container** | Docker + Docker Compose |
@@ -261,6 +263,22 @@ PR URL → Parse PR → Fetch PR → Diff Analysis → Risk Detection → Review
 
 The Week2 prompt and response shape are preserved. See [docs/LANGGRAPH_WORKFLOW.md](docs/LANGGRAPH_WORKFLOW.md) for the workflow design and extension points.
 
+### Tree-sitter Parser Service
+
+Sprint4 PR1 adds a standalone Tree-sitter parser boundary under `ai-pr-review/backend/app/services/tree_sitter/`.
+It currently supports Python AST output and reserves Java, Go, and TypeScript as explicit future language extension points.
+The review workflow is unchanged.
+
+```python
+from app.services.tree_sitter import TreeSitterService
+
+service = TreeSitterService()
+result = service.parse_source("def add(a, b):\n    return a + b\n", language="python")
+
+assert result["language"] == "python"
+assert result["ast"]["type"] == "module"
+```
+
 ---
 
 ## 🔧 Development Workflow
@@ -324,7 +342,7 @@ python -m pytest tests/test_parser.py -v
 python -m pytest tests/ --cov-fail-under=80
 ```
 
-**Current verification baseline**: root suite 177 tests with 85%+ coverage, plus backend suite 89 tests across API, workflow, metrics, GitHub, LLM, report, and task paths.
+**Current verification baseline**: root suite 177 tests with 85%+ coverage, plus backend suite 96 tests across API, workflow, metrics, GitHub, LLM, report, parser, and task paths.
 
 ---
 
@@ -338,7 +356,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 | **Stage 1** — PR Fetch + Diff Engine | ✅ Complete |
 | **Stage 2** — Review Engine + Pipeline | ✅ Complete |
 | **Stage 3** — Agent Workflow + Observability | ✅ Complete |
-| **Stage 4** — Context Retrieval V1 | 📅 Planned |
+| **Stage 4** — Parser Foundation | 🔧 In Progress |
 | **Stage 5** — Multi-Model Evaluation | 📅 Planned |
 | **Stage 6** — GitHub Webhooks + Batch Review | 📅 Planned |
 
@@ -353,7 +371,8 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for detailed milestones.
 | Frontend | ✅ Next.js SPA |
 | LLM providers | ✅ DeepSeek / OpenAI / Qwen |
 | Observability | ✅ Review workflow metrics surfaced in API and frontend |
-| Test coverage | ✅ Root suite 177 tests, backend suite 89 tests, ≥80% |
+| Tree-sitter parser foundation | ✅ Python AST service, Java/Go/TypeScript interfaces reserved |
+| Test coverage | ✅ Root suite 177 tests, backend suite 96 tests, ≥80% |
 | CI/CD | ✅ GitHub Actions |
 | Enterprise docs | ✅ PRD / Roadmap / Acceptance / Workflow |
 | Context Retrieval | 📅 Stage 4 |
