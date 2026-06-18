@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added Context Retrieval Engine with `ContextRetriever` for changed-file Context Packages containing related functions, classes, imports, files, README, and Architecture context.
+- Added Context Retrieval pytest coverage for package generation, existing symbol index use, Review Agent state updates, missing docs, and invalid changed files.
 - Added repository-wide Code Symbol Index service for Python modules, functions, classes, and imports with deterministic JSON output and LangGraph-compatible state updates.
 - Added Code Symbol Index pytest coverage for repository scanning, deterministic JSON, state updates, skipped directories, parse errors, and invalid roots.
 - Added Tree-sitter parser foundation with `ParserFactory`, `TreeSitterService`, Python AST output, and reserved Java/Go/TypeScript extension points.
